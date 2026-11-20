@@ -5,6 +5,18 @@ button:hover { background: #e6e6e6; }
 button.on { background: #222; color: #fff; border-color: #222; }
 #top { display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-bottom: 1px solid #ccc; }
 .brand { font-weight: 700; white-space: nowrap; }
+/* ---------- dostępność ---------- */
+.skip { position: absolute; left: -9999px; top: 0; z-index: 30; background: #1d4f9c; color: #fff; padding: 6px 10px; }
+.skip:focus { left: 6px; top: 6px; }
+.nojs { margin: 0; padding: 8px 12px; background: #fff3c4; border-bottom: 1px solid #d9b84a; }
+:focus-visible { outline: 3px solid #1d4f9c; outline-offset: 2px; }
+#stepBox:focus { outline: none; }
+.btnlink { font: inherit; padding: 3px 9px; border: 1px solid #999; background: #f4f4f4; border-radius: 3px; color: #1a1a1a; text-decoration: none; white-space: nowrap; }
+.btnlink:hover { background: #e6e6e6; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+  .newdraw { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
+}
 .tools { margin-left: auto; display: flex; gap: 4px; }
 .badge { display: inline-block; font-size: 10px; background: #fff3c4; border: 1px solid #d9b84a; border-radius: 3px; padding: 0 3px; color: #6b5200; }
 button.on .badge { background: #6b5200; color: #fff3c4; }
@@ -39,9 +51,9 @@ button.on .badge { background: #6b5200; color: #fff3c4; }
 #ctrl button { flex: 1; padding: 6px 4px; font-weight: 600; }
 #ctrl #bPlay { flex: 0 0 38px; }
 #timeline { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0 8px; }
-#timeline span { min-width: 22px; height: 22px; padding: 0 4px; border: 1px solid #aaa; border-radius: 3px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; }
-#timeline span.done { background: #dfe8f5; }
-#timeline span.cur { background: #1d4f9c; color: #fff; border-color: #1d4f9c; }
+#timeline button { font: inherit; min-width: 22px; height: 22px; padding: 0 4px; border: 1px solid #aaa; border-radius: 3px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; }
+#timeline button.done { background: #dfe8f5; }
+#timeline button.cur { background: #1d4f9c; color: #fff; border-color: #1d4f9c; }
 #stepHead { font-size: 14px; margin-bottom: 6px; }
 #stepNo { display: inline-block; background: #222; color: #fff; padding: 0 6px; margin-right: 6px; border-radius: 2px; font-size: 12px; }
 .layer { border-left: 4px solid #ccc; padding: 3px 8px; margin: 5px 0; }

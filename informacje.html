@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informacje – Geometria Wykreślna – trener</title>
+<style>
+  body { margin: 0; font: 15px/1.6 system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: #1a1a1a; background: #fff; }
+  main { max-width: 780px; margin: 0 auto; padding: 16px 20px 40px; }
+  h1 { font-size: 24px; margin: 8px 0 4px; }
+  h2 { font-size: 18px; margin: 26px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+  a { color: #1d4f9c; }
+  .back { display: inline-block; margin-top: 8px; }
+  .muted { color: #555; font-size: 13px; }
+  :focus-visible { outline: 3px solid #1d4f9c; outline-offset: 2px; }
+  code { background: #f2f2f2; padding: 0 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">← Powrót do aplikacji</a>
+  <h1>Informacje o stronie</h1>
+  <p class="muted">Ostatnia aktualizacja: 20 listopada 2026 r.</p>
+
+  <nav aria-label="Spis treści">
+    <ul>
+      <li><a href="#o-stronie">O stronie</a></li>
+      <li><a href="#zastrzezenia">Zastrzeżenia</a></li>
+      <li><a href="#prywatnosc">Prywatność i pliki cookie</a></li>
+      <li><a href="#zrodla">Prawa autorskie i źródła</a></li>
+      <li><a href="#dostepnosc">Dostępność</a></li>
+      <li><a href="#kontakt">Kontakt i zgłoszenia</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="o-stronie">O stronie</h2>
+  <p>„Geometria Wykreślna – trener” to bezpłatna, niekomercyjna pomoc do nauki geometrii wykreślnej (rzuty Monge’a, przenikania brył, aksonometria, rzut cechowany, perspektywa). Jest to prywatny projekt edukacyjny – <b>nie jest oficjalnym materiałem żadnej uczelni ani prowadzącego zajęcia</b>.</p>
+
+  <h2 id="zastrzezenia">Zastrzeżenia</h2>
+  <ul>
+    <li>Treści mają charakter pomocniczy i mogą zawierać błędy. Nie zastępują zajęć, wykładów ani literatury przedmiotu.</li>
+    <li>Dane liczbowe zadań odczytano z rysunków – mogą się nieznacznie różnić od oryginału. Przyjęte założenia są opisane w treści zadań.</li>
+    <li>Strona jest udostępniana „tak jak jest”, bez gwarancji poprawności i dostępności. Korzystasz z niej na własną odpowiedzialność.</li>
+  </ul>
+
+  <h2 id="prywatnosc">Prywatność i pliki cookie</h2>
+  <ul>
+    <li>Autor strony <b>nie zbiera ani nie przetwarza danych osobowych</b>: nie ma tu kont, formularzy, analityki, reklam ani plików cookie.</li>
+    <li>Ustawienia interfejsu (np. filtry widoku, układ kolumn, tryb kartki, rzutnia π₃, wyświetlanie kropli wody) zapisują się <b>wyłącznie w Twojej przeglądarce</b> (pamięć <code>localStorage</code>, klucze zaczynające się od <code>gw.</code>). Nie są nigdzie wysyłane. Usuniesz je, czyszcząc dane tej witryny w ustawieniach przeglądarki. Zapis służy tylko funkcjom, z których świadomie korzystasz, dlatego nie wymaga zgody.</li>
+    <li>Przy otwarciu strony przeglądarka łączy się z serwerami zewnętrznymi, które technicznie widzą Twój adres IP:
+      <ul>
+        <li>hosting: GitHub Pages (GitHub, Inc.) – <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">polityka prywatności GitHub</a>;</li>
+        <li>biblioteka graficzna Three.js pobierana z <a href="https://www.cloudflare.com/privacypolicy/">cdnjs (Cloudflare)</a> i <a href="https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net">jsDelivr</a>.</li>
+      </ul>
+      Autor strony nie ma dostępu do tych danych. Ich administratorami są wymienieni dostawcy, na zasadach opisanych w ich politykach.</li>
+  </ul>
+
+  <h2 id="zrodla">Prawa autorskie i źródła</h2>
+  <ul>
+    <li>Zadania przygotowano na podstawie list ćwiczeniowych z przedmiotu oraz przykładów z literatury. Wykorzystano wyłącznie dane geometryczne (wymiary, położenia punktów). Wszystkie rysunki są generowane programowo – strona nie zawiera skanów ani kopii ilustracji.</li>
+    <li>Literatura, z której pochodzą przykłady:
+      <ul>
+        <li>T. Bogaczyk, T. Romaszkiewicz-Białas, <i>13 wykładów z geometrii wykreślnej</i>;</li>
+        <li>B. Kotarska-Lewandowska, <i>Geometria wykreślna – zadania testowe</i>;</li>
+        <li>B. Grochowski, <i>Geometria wykreślna z perspektywą stosowaną</i>.</li>
+      </ul>
+      Prawa do tych publikacji przysługują ich autorom i wydawcom.</li>
+    <li>Kod i treść strony: © autor projektu, wszelkie prawa zastrzeżone. Biblioteka <a href="https://threejs.org/">Three.js</a> jest udostępniana na licencji MIT.</li>
+  </ul>
+
+  <h2 id="dostepnosc">Dostępność</h2>
+  <p>Strona jest tworzona z myślą o podstawowych zasadach dostępności (WCAG 2.1):</p>
+  <ul>
+    <li>obsługa klawiaturą: strzałki zmieniają krok, Tab przechodzi między kontrolkami, a lista skrótów jest pod przyciskiem ⌨; na początku strony jest link „Przejdź do opisu kroku”;</li>
+    <li>widoczny fokus, etykiety dla czytników ekranu, automatyczne ogłaszanie zmiany kroku;</li>
+    <li>respektowanie systemowego ustawienia ograniczenia animacji;</li>
+    <li>tryb „Kartka” (czarno-biały, wysoki kontrast) oraz układ dla wąskich ekranów.</li>
+  </ul>
+  <p><b>Ograniczenia:</b> rysunki wykreślne i model 3D są z natury treściami graficznymi. Ich zawartość jest opisana tekstowo w panelu kroku (CO / JAK / DLACZEGO), ale nie zastąpi to w pełni samego rysunku. Strona jest prywatnym projektem i nie podlega ustawie o dostępności cyfrowej podmiotów publicznych. Uwagi o barierach są jednak mile widziane.</p>
+
+  <h2 id="kontakt">Kontakt i zgłoszenia</h2>
+  <p>Błędy w zadaniach, uwagi o dostępności i prośby o usunięcie treści możesz zgłaszać w zakładce <a href="https://github.com/benozoLorenozo/geometria-wykreslna/issues">Issues repozytorium projektu</a> (wymaga konta GitHub).</p>
+
+  <p><a class="back" href="index.html">← Powrót do aplikacji</a></p>
+</main>
+</body>
+</html>

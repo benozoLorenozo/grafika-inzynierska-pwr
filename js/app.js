@@ -166,7 +166,7 @@
   }
   function selectModule(n, lessonId) {
     App.modSel = n;
-    document.querySelectorAll('#mods button').forEach((b) => b.classList.toggle('on', +b.dataset.m === n));
+    document.querySelectorAll('#mods button').forEach((b) => (b.classList.toggle('on', +b.dataset.m === n), b.setAttribute('aria-pressed', String(+b.dataset.m === n))));
     const bar = $('#lessonbar');
     bar.innerHTML = '';
     const all = GW.lessons.filter((l) => l.mod === n);
@@ -189,7 +189,7 @@
     bar.appendChild(lab);
     const L = ls.find((l) => l.id === lessonId) || ls[0] || all[0];
     if (L && L !== App.lesson) selectLesson(L);
-    else if (L) document.querySelectorAll('#lessonbar button').forEach((b) => b.classList.toggle('on', b.dataset.id === L.id));
+    else if (L) document.querySelectorAll('#lessonbar button').forEach((b) => (b.classList.toggle('on', b.dataset.id === L.id), b.setAttribute('aria-pressed', String(b.dataset.id === L.id))));
   }
   function ctx() {
     return { app: App, v3, v2, B: App.B, data: App.B ? App.B.data : {}, P: App.P, S: App.S, sys: App.B && App.B.sys, k: App.k };
@@ -202,13 +202,13 @@
     try {
       history.replaceState(null, '', '#' + L.id);
     } catch (e) {}
-    document.querySelectorAll('#lessonbar button').forEach((b) => b.classList.toggle('on', b.dataset.id === L.id));
+    document.querySelectorAll('#lessonbar button').forEach((b) => (b.classList.toggle('on', b.dataset.id === L.id), b.setAttribute('aria-pressed', String(b.dataset.id === L.id))));
     App.P = {};
     (L.params || []).forEach((p) => (App.P[p.k] = p.v));
     (L.opts || []).forEach((p) => (App.P[p.k] = p.v));
     App.S = {};
     ((L.special && L.special.ui) || []).forEach((u) => {
-      if (u.k) App.S[u.k] = u.v;
+      if (u.k) App.S[u.k] = u.persist ? store.get(u.persist, u.v) : u.v;
     });
     $('#algo').innerHTML = L.algo || '';
     $('#v2title').innerHTML = L.v2title || 'Rysunek 2D';
@@ -270,6 +270,7 @@
       d.className = 'prmsel';
       d.innerHTML = p.l + ': ';
       const s = document.createElement('select');
+      s.setAttribute('aria-label', p.l);
       p.choices.forEach(([v, t]) => {
         const o = document.createElement('option');
         o.value = v;
@@ -298,6 +299,7 @@
       d.innerHTML = '<span>' + p.l + '</span>';
       const r = document.createElement('input');
       r.type = 'range';
+      r.setAttribute('aria-label', p.l);
       r.min = p.min;
       r.max = p.max;
       r.step = p.step || 1;
@@ -424,6 +426,7 @@
         d.innerHTML = '<span>' + u.l + '</span>';
         const r = document.createElement('input');
         r.type = 'range';
+        r.setAttribute('aria-label', u.l.replace(/<[^>]+>/g, ''));
         r.min = u.min;
         r.max = u.max;
         r.step = u.step || 0.01;
@@ -472,6 +475,29 @@
           refreshOverlay();
         };
         btnRow.appendChild(b);
+      } else if (u.type === 'select') {
+        btnRow = null;
+        const d = document.createElement('label');
+        d.className = 'prmsel';
+        d.style.display = 'block';
+        d.appendChild(document.createTextNode(u.l + ': '));
+        const s = document.createElement('select');
+        u.choices.forEach(([v, t]) => {
+          const o = document.createElement('option');
+          o.value = v;
+          o.textContent = t;
+          s.appendChild(o);
+        });
+        s.value = App.S[u.k];
+        u._el = s;
+        s.onchange = () => {
+          App.S[u.k] = s.value;
+          if (u.persist) store.set(u.persist, s.value);
+          u.onchange && u.onchange(ctx());
+          refreshOverlay();
+        };
+        d.appendChild(s);
+        box.appendChild(d);
       } else if (u.type === 'html') {
         btnRow = null;
         const d = document.createElement('div');
@@ -486,6 +512,7 @@
     const u = (App.lesson.special.ui || []).find((x) => x.k === k);
     if (u && u._el) {
       if (u.type === 'check') u._el.checked = !!v;
+      else if (u.type === 'select') u._el.value = v;
       else {
         u._el.value = v;
         u._out.textContent = fmt(v);
@@ -625,7 +652,9 @@
     if (App.measure.info) Object.assign(App.ovInfo, App.measure.info);
     const F = (p) => GW.passFilter(p, App.filt) || p.id === 'measure';
     v3.setOverlay(p3.filter(F));
-    v2.setOverlay(p2.filter(F));
+    const o2 = p2.filter(F);
+    // nie przerysowuj arkusza bez potrzeby (zachowuje podświetlenie pod kursorem)
+    if (o2.length || v2.ov.length) v2.setOverlay(o2);
   }
   App.refreshOverlay = refreshOverlay;
 
@@ -687,9 +716,11 @@
     const tl = $('#timeline');
     tl.innerHTML = '';
     App.B.steps.forEach((s, i) => {
-      const e = document.createElement('span');
+      const e = document.createElement('button');
+      e.type = 'button';
       e.textContent = i + 1;
       e.title = (s.title || '').replace(/<[^>]+>/g, '');
+      e.setAttribute('aria-label', 'Krok ' + (i + 1) + ': ' + e.title);
       e.onclick = () => show(i, { anim: true, cam: true });
       tl.appendChild(e);
     });
@@ -892,9 +923,11 @@
     $('#sJak').innerHTML = st.jak || '';
     $('#sWhy').innerHTML = st.why || '';
     $('#stepBox').classList.toggle('quizhide', !!hideNew);
-    document.querySelectorAll('#timeline span').forEach((e, i) => {
+    document.querySelectorAll('#timeline button').forEach((e, i) => {
       e.classList.toggle('cur', i === k);
       e.classList.toggle('done', i < k);
+      if (i === k) e.setAttribute('aria-current', 'step');
+      else e.removeAttribute('aria-current');
     });
     if (o.cam) {
       if (st.cam) applyCam(st.cam);
@@ -950,17 +983,22 @@
   $('#bPaper').onclick = () => setPaper(!document.body.classList.contains('paper'));
 
   /* ---------- ściągawka ---------- */
+  let cheatReturn = null;
   function openCheat(mod) {
     const box = $('#cheat');
+    if (box.style.display !== 'flex') cheatReturn = document.activeElement;
     const m = mod || App.modSel;
     const tabs = GW.modules.map((x) => '<button data-cm="' + x.n + '"' + (x.n === m ? ' class="on"' : '') + '>' + x.n + '. ' + x.s + '</button>').join('');
     box.innerHTML = '<div class="cheatin"><div class="cheathead"><b>Ściągawka – teoria w pigułce</b><span class="cheattabs">' + tabs + '</span><button id="cheatX">✕ Zamknij (Esc)</button></div><div class="cheatbody">' + ((GW.CHEAT && GW.CHEAT[m]) || '') + '</div></div>';
     box.style.display = 'flex';
     box.querySelectorAll('[data-cm]').forEach((b) => (b.onclick = () => openCheat(+b.dataset.cm)));
     $('#cheatX').onclick = closeCheat;
+    $('#cheatX').focus();
   }
   function closeCheat() {
+    if ($('#cheat').style.display === 'none') return;
     $('#cheat').style.display = 'none';
+    if (cheatReturn && cheatReturn.focus) cheatReturn.focus();
   }
   $('#bCheat').onclick = () => ($('#cheat').style.display === 'flex' ? closeCheat() : openCheat());
   $('#cheat').onclick = (e) => {
@@ -984,12 +1022,15 @@
         ['T', 'ściągawka teorii'],
         ['D', 'dopasuj rysunek 2D'],
         ['Esc', 'zamknij okno'],
+        ['Tab', 'przechodzenie między przyciskami i suwakami'],
       ]
         .map((r) => '<tr><td><kbd>' + r[0] + '</kbd></td><td>' + r[1] + '</td></tr>')
         .join('') +
       '</table></div></div>';
+    cheatReturn = document.activeElement;
     box.style.display = 'flex';
     $('#cheatX').onclick = closeCheat;
+    $('#cheatX').focus();
   };
 
   /* ---------- układ kolumn (przeciąganie) ---------- */
@@ -1066,10 +1107,11 @@
 
   /* ---------- klawiatura ---------- */
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') return closeCheat();
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName === 'BUTTON') return;
     const k = e.key;
-    if (k === 'Escape') return closeCheat();
     if (k === 'ArrowRight') $('#bNext').click();
     else if (k === 'ArrowLeft') $('#bPrev').click();
     else if (k === 'Home') show(0, { anim: false, cam: true });

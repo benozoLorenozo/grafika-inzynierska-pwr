@@ -47,6 +47,17 @@
     const p3 = [{ t: 'pl', id: 'flow', pts: pts.map((q) => [q[0], q[1], q[2] + 0.12]), s: 'water' }, { t: 'pt', id: 'flow', p: [pts[0][0], pts[0][1], pts[0][2] + 0.12], s: 'water' }];
     return { p2, p3 };
   }
+  /* overlay spływu wody wg wybranego trybu: off / 2d / 3d / both */
+  function waterOverlay(c, F, box, cursor, dropsOn, n) {
+    const d = c.data;
+    const w = c.S.water || '3d';
+    const s2 = w === '2d' || w === 'both',
+      s3 = w === '3d' || w === 'both';
+    const r = s2 || s3 ? flowOverlay(c, F, box, cursor) || { p2: [], p3: [] } : { p2: [], p3: [] };
+    const p3 = s3 ? r.p3.slice() : [];
+    if (s3 && dropsOn) p3.push(d._drops || (d._drops = dropsPrim(d.F, d.box, n)));
+    return { p2: s2 ? r.p2 : [], p3 };
+  }
   /* animowane krople wody (THREE.Points) */
   function dropsPrim(F, box, n, getState) {
     let cache = null;
@@ -186,8 +197,8 @@
       { k: 'Cx', l: 'C: położenie x', min: 10, max: 45, step: 0.5, v: 30 },
     ],
     special: {
-      note: '<b>Spływ wody.</b> Najedź kursorem na rysunek 2D – z tego miejsca popłynie kropla po płaszczyźnie (linia największego spadku). Zauważ: zawsze prostopadle do warstwic, równolegle do skali nachylenia.',
-      ui: [{ type: 'check', k: 'drops', l: 'animowane krople w 3D', v: true }],
+      note: '<b>Spływ wody.</b> Najedź kursorem na rysunek 2D – z tego miejsca popłynie kropla po płaszczyźnie (linia największego spadku): zawsze prostopadle do warstwic. Tryb wyświetlania kropli wybierzesz poniżej (wybór jest zapamiętywany).',
+      ui: [{ type: 'select', k: 'water', l: 'Spływ wody (kropla pod kursorem i krople animowane)', choices: [['off', 'brak'], ['2d', 'tylko w 2D'], ['3d', 'tylko w 3D'], ['both', '2D + 3D']], v: '3d', persist: 'water' }],
       bind(c) {
         c.v2.onBgMove = (P) => {
           c.S.cursor = P;
@@ -197,8 +208,7 @@
       overlay(c) {
         const d = c.data;
         if (!d.F) return {};
-        const r = flowOverlay(c, d.F, d.box, c.S.cursor) || { p2: [], p3: [] };
-        if (c.S.drops && c.k >= d.dropStep) r.p3.push(d._drops || (d._drops = dropsPrim(d.F, d.box, 60)));
+        const r = waterOverlay(c, d.F, d.box, c.S.cursor, c.k >= d.dropStep, 60);
         return { p2: r.p2, p3: r.p3, info: { flow: 'Droga spływu wody – linia największego spadku płaszczyzny (⟂ warstwic)' } };
       },
     },
@@ -797,8 +807,8 @@
       { k: 'hE', l: 'cecha E [m]', min: 0, max: 14, step: 0.1, v: 2.3 },
     ],
     special: {
-      note: 'Najedź na rysunek – kropla wody popłynie po płaszczyźnie α (linia największego spadku).',
-      ui: [],
+      note: 'Najedź na rysunek – kropla wody popłynie po płaszczyźnie α (linia największego spadku). Tryb wyświetlania wybierzesz poniżej.',
+      ui: [{ type: 'select', k: 'water', l: 'Spływ wody (kropla pod kursorem i krople animowane)', choices: [['off', 'brak'], ['2d', 'tylko w 2D'], ['3d', 'tylko w 3D'], ['both', '2D + 3D']], v: '3d', persist: 'water' }],
       bind(c) {
         c.v2.onBgMove = (P) => {
           c.S.cursor = P;
@@ -808,7 +818,7 @@
       overlay(c) {
         const d = c.data;
         if (!d.F) return {};
-        const r = flowOverlay(c, d.F, d.box, c.S.cursor) || {};
+        const r = waterOverlay(c, d.F, d.box, c.S.cursor, false, 0);
         return { p2: r.p2, p3: r.p3, info: { flow: 'Spływ wody po płaszczyźnie α' } };
       },
     },
@@ -1402,9 +1412,9 @@
     measureInfo,
     mistakes: [],
     special: {
-      note: '<b>Model terenu 3D + mapa.</b> Najedź na mapę: kropla popłynie po terenie i skarpach. Suwak „przewyższenie” nad widokiem 3D podnosi rzeźbę terenu (rysunek 2D się nie zmienia).',
+      note: '<b>Model terenu 3D + mapa.</b> Najedź na mapę: kropla popłynie po terenie i skarpach (tryb wyświetlania poniżej). Suwak „przewyższenie” nad widokiem 3D podnosi rzeźbę terenu (rysunek 2D się nie zmienia).',
       ui: [
-        { type: 'check', k: 'drops', l: 'animowane krople w 3D', v: true },
+        { type: 'select', k: 'water', l: 'Spływ wody (kropla pod kursorem i krople animowane)', choices: [['off', 'brak'], ['2d', 'tylko w 2D'], ['3d', 'tylko w 3D'], ['both', '2D + 3D']], v: '3d', persist: 'water' },
         { type: 'check', k: 'orig', l: 'pokaż pierwotny teren (półprzezroczysty)', v: false },
       ],
       bind(c) {
@@ -1417,8 +1427,7 @@
         const d = c.data;
         if (!d.F) return {};
         const F = c.k >= d.finalStep ? d.F : d.T;
-        const r = flowOverlay(c, F, d.box, c.S.cursor) || { p2: [], p3: [] };
-        if (c.S.drops && c.k >= d.finalStep) r.p3.push(d._drops || (d._drops = dropsPrim(d.F, d.box, 120)));
+        const r = waterOverlay(c, F, d.box, c.S.cursor, c.k >= d.finalStep, 120);
         if (c.S.orig && c.k >= d.finalStep) r.p3.push(surfPrim('orig', (x, y) => d.T(x, y) + 0.02, d.box, 80, 60, () => '#6aa84f', 0.35));
         return { p2: r.p2, p3: r.p3, info: { flow: 'Droga spływu wody – linia największego spadku (⟂ warstwic)' } };
       },
