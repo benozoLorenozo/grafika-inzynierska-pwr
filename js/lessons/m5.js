@@ -176,6 +176,7 @@
   GW.addLesson({
     id: 'm5-plaszczyzna',
     mod: 5,
+    zExag: 'auto',
     title: '5.1 Płaszczyzna: stopniowanie, warstwice, nachylenie',
     v2title: 'Rzut cechowany (widok z góry, cechy w m)',
     params: [
@@ -397,6 +398,381 @@
     },
   });
 
+
+  /* =================================================================
+     wspólne: płaszczyzna przez 3 punkty z cechami, stopniowanie
+     ================================================================= */
+  const measureInfo = (c, a, b) => {
+    const F = c.data && (c.data.F || c.data.T);
+    if (!F) return '';
+    const ha = F(a[0], a[1]),
+      hb = F(b[0], b[1]);
+    if (!isFinite(ha) || !isFinite(hb)) return '';
+    const d = V.dist(a, b);
+    const dh = hb - ha;
+    const sp = Math.abs(dh) / Math.max(1e-9, d);
+    return 'cechy: ' + f1(ha) + ' → ' + f1(hb) + ' (Δh = ' + f1(dh) + ' m); spadek ' + f1(sp * 100) + '%, nachylenie 1 : ' + (sp > 1e-6 ? G.f2(1 / sp) : '∞') + ', α = ' + f1(G.deg(Math.atan(sp))) + '°';
+  };
+  /* punkty o cechach całkowitych na odcinku (P, Q z cechami w [2]) */
+  const gradeSeg = (P, Q) =>
+    rangeInt(P[2], Q[2])
+      .filter((k) => Math.abs(Q[2] - P[2]) > 1e-9)
+      .map((k) => ({ k, p: V.lerp(P, Q, (k - P[2]) / (Q[2] - P[2])) }));
+  const contourClip = (pf, poly, lv) => planeContours(pf, poly, lv);
+  const drawPtC = (B, id, P, nm, s, info) => {
+    B.a2({ t: 'pt', id, p: P2(P), s: s || 'given', label: nm + '′(' + f1(P[2]).replace(/,0$/, '') + ')' });
+    B.a3({ t: 'pt', id, p: P, s: s || 'given', label: nm });
+    B.a3({ t: 'seg', id: id + 'pole', a: [P[0], P[1], Math.min(0, P[2]) - 0.5], b: P, s: 'thin' });
+    if (info) B.info(id, info, [id + 'pole']);
+  };
+  const refPlane = (B, box, z0) => {
+    B.a3({ t: 'poly', id: 'ref', pts: [[box[0], box[1], z0], [box[2], box[1], z0], [box[2], box[3], z0], [box[0], box[3], z0]], col: '#7fa8d8', op: 0.1, edge: true, noFit: true });
+    B.info('ref', 'Poziom odniesienia');
+  };
+
+  /* =================================================================
+     5.2 Plan warstwicowy płaszczyzny o danym nachyleniu (Lista 5, zad. 3)
+     ================================================================= */
+  GW.addLesson({
+    id: 'm5-nachylenie',
+    mod: 5,
+    zExag: 'auto',
+    lista: 'L5 Z3',
+    title: '5.2 Płaszczyzna o nachyleniu 1:n przez punkt; proste o spadku p%',
+    v2title: 'Rzut cechowany (jednostki rysunku = m, skala 1:100)',
+    params: [
+      { k: 'n', l: 'nachylenie płaszczyzny 1 : n, n =', min: 0.6, max: 3, step: 0.1, v: 1.3 },
+      { k: 'pp', l: 'spadek prostych p [%]', min: 10, max: 70, v: 40 },
+      { k: 'az', l: 'kierunek spadku S′β [°]', min: -180, max: 180, v: 78 },
+      { k: 'hA', l: 'cecha A', min: 0, max: 6, step: 0.5, v: 3 },
+    ],
+    measureInfo,
+    mistakes: ['Spadek 40% to <b>moduł 2,5</b> (1/0,4), nachylenie 1:1,3 to moduł 1,3 – nie odwrotnie.', 'Jeśli okrąg o promieniu modułu prostej nie przecina warstwicy płaszczyzny, prosta o takim spadku nie istnieje (płaszczyzna jest łagodniejsza niż prosta).'],
+    algo:
+      '<ol><li><b>Moduł płaszczyzny</b> i = n (dla nachylenia 1 : n) – odstęp warstwic co 1 m.</li>' +
+      '<li><b>Skala nachylenia</b> przez A równolegle do S′<sub>β</sub>: odkładamy co i kreski cech (w kierunku strzałki cechy maleją).</li>' +
+      '<li><b>Warstwice</b>: proste ⟂ skali nachylenia przez kreski – plan warstwicowy płaszczyzny β.</li>' +
+      '<li><b>Prosta o spadku p%</b> przez A: moduł prostej i<sub>p</sub> = 100/p. Okrąg o środku A′ i promieniu i<sub>p</sub> przecina warstwicę o cesze (h<sub>A</sub> − 1) w punktach B′, C′.</li>' +
+      '<li>Proste AB i AC leżą w β (oba punkty w β) i mają spadek p% (różnica 1 m na długości i<sub>p</sub>). Zadanie ma 2, 1 lub 0 rozwiązań.</li></ol>',
+    build(p, B) {
+      const A = [2, 4.76, p.hA];
+      const az = G.rad(p.az);
+      const d = [Math.cos(az), Math.sin(az)];
+      const ival = p.n;
+      const pf = planeFromScale(P2(A), p.hA, p.az, ival);
+      const box = [-3.5, -1.5, 10.5, 10];
+      const patch = [
+        [box[0], box[1]],
+        [box[2], box[1]],
+        [box[2], box[3]],
+        [box[0], box[3]],
+      ];
+      B.data.F = (x, y) => (x >= box[0] && x <= box[2] && y >= box[1] && y <= box[3] ? pf.f(x, y) : NaN);
+      B.data.box = box;
+      B.step({
+        title: 'Dane: punkt A, kierunek spadku S′β, nachylenie 1:' + G.f1(p.n).replace(',0', ''),
+        co: 'Płaszczyzna <b>β</b> przechodzi przez ' + cecha('A', A[2]) + ', jej linia spadku ma kierunek strzałki S′<sub>β</sub>, nachylenie <b>1 : ' + G.f1(ival) + '</b>. Przez A poprowadzić w β proste o spadku <b>' + p.pp + '%</b>.',
+        jak: 'Strzałka S′<sub>β</sub> pokazuje kierunek, w którym płaszczyzna opada (cechy maleją).',
+        why: 'Płaszczyznę w rzucie cechowanym wyznacza punkt + skala nachylenia (kierunek i moduł).',
+        cam: { dir: [0.4, 0.9, 0.9] },
+      });
+      refPlane(B, box, 0);
+      drawPtC(B, 'A', A, 'A', 'given', 'Punkt A leżący na płaszczyźnie β');
+      const s0 = V.add(P2(A), V.add(V.mul(d, -3), V.mul(V.perp2(d), 5.5)));
+      B.a2({ t: 'arrow', id: 'Sb', a: s0, b: V.add(s0, V.mul(d, 7)), s: 'given' });
+      B.a2({ t: 'seg', id: 'Sb', a: V.add(s0, V.mul(V.perp2(d), 0.12)), b: V.add(V.add(s0, V.mul(d, 6.4)), V.mul(V.perp2(d), 0.12)), s: 'given' });
+      B.a2({ t: 'text', id: 'Sb', p: V.add(s0, V.add(V.mul(d, 7.5), V.mul(V.perp2(d), 0.6))), txt: "S_β'", s: 'note' });
+      B.info('Sb', 'S′<sub>β</sub> – kierunek linii spadku płaszczyzny β (strzałka w stronę malejących cech)');
+      // skala nachylenia przez A
+      const lv = rangeInt(p.hA - 6, p.hA + 6);
+      const at = (k) => V.add(P2(A), V.mul(d, (p.hA - k) * ival));
+      B.step({
+        title: 'Skala nachylenia przez A (moduł i = ' + f1(ival) + ')',
+        co: 'Przez A′ prowadzimy prostą ∥ S′<sub>β</sub> i odkładamy co <b>i = ' + f1(ival) + '</b> kreski cech: w stronę strzałki ' + (p.hA - 1) + ', ' + (p.hA - 2) + ', … w przeciwną ' + (p.hA + 1) + ', …',
+        jak: 'Nachylenie 1 : ' + f1(ival) + ' oznacza: 1 m różnicy wysokości na ' + f1(ival) + ' m w poziomie (na rysunku 1:100 – ' + f1(ival) + ' cm).',
+        why: 'Linia spadku jest prostopadła do warstwic i ma największe nachylenie – jej moduł jest modułem płaszczyzny.',
+      });
+      const ksIn = lv.filter((k) => {
+        const q = at(k);
+        return q[0] > box[0] && q[0] < box[2] && q[1] > box[1] && q[1] < box[3];
+      });
+      const off = V.mul(V.perp2(d), 0.08);
+      if (ksIn.length >= 2) {
+        const a = at(ksIn[0]),
+          b = at(ksIn[ksIn.length - 1]);
+        B.a2({ t: 'seg', id: 'skala', a, b, s: 'given' });
+        B.a2({ t: 'seg', id: 'skala', a: V.add(a, off), b: V.add(b, off), s: 'vis', w: 3 });
+        ksIn.forEach((k) => {
+          const q = at(k);
+          B.a2({ t: 'seg', id: 'skala', a: V.sub(q, V.mul(off, 2)), b: V.add(q, V.mul(off, 3)), s: 'given' });
+          B.a2({ t: 'text', id: 'skala', p: V.add(q, V.mul(off, -4)), txt: String(k), s: 'hval' });
+        });
+        B.a3({ t: 'seg', id: 'skala', a: [a[0], a[1], ksIn[0]], b: [b[0], b[1], ksIn[ksIn.length - 1]], s: 'water' });
+        B.info('skala', 'Skala nachylenia płaszczyzny β – kreski co moduł i = ' + f1(ival));
+      }
+      B.src('A', 'Sb');
+      const cs = contourClip(pf, patch, lv);
+      B.step({
+        title: 'Plan warstwicowy płaszczyzny β',
+        co: 'Przez kreski skali prowadzimy proste ⟂ S′<sub>β</sub> – <b>warstwice</b> co 1 m.',
+        jak: 'Warstwica przez A ma cechę ' + p.hA + '; kolejne są równoległe w odstępach ' + f1(ival) + '.',
+        why: 'Warstwica to pozioma prosta płaszczyzny – prostopadła do linii spadku.',
+      });
+      cs.forEach((c) => {
+        const id = 'w' + c.lv;
+        B.a2({ t: 'seg', id, a: c.a, b: c.b, s: 'cont' });
+        B.a2({ t: 'text', id, p: V.lerp(c.a, c.b, 0.04), txt: String(c.lv), s: 'hval' });
+        B.a3({ t: 'seg', id, a: [c.a[0], c.a[1], c.lv], b: [c.b[0], c.b[1], c.lv], s: 'cont' });
+        B.info(id, 'Warstwica płaszczyzny β o cesze ' + c.lv);
+      });
+      B.a3({ t: 'poly', id: 'beta', pts: patch.map((q) => [q[0], q[1], pf.f(q[0], q[1])]), col: '#e8c060', op: 0.3 });
+      B.info('beta', 'Płaszczyzna β');
+      // proste o spadku p%
+      const ip = 100 / p.pp;
+      const k1 = p.hA - 1;
+      const w1 = cs.find((c) => c.lv === k1);
+      B.step({
+        title: 'Okrąg o promieniu modułu prostej i_p = ' + f1(ip),
+        co: 'Moduł prostej o spadku ' + p.pp + '%: <b>i<sub>p</sub> = 100/' + p.pp + ' = ' + G.f2(ip) + '</b>. Okrąg o środku A′ i promieniu i<sub>p</sub> przecina warstwicę ' + k1 + ' w punktach B′, C′.',
+        jak: 'Punkt odległy w poziomie o i<sub>p</sub> od A i leżący o 1 m niżej wyznacza z A prostą o spadku p%. Takie punkty płaszczyzny β leżą na warstwicy ' + k1 + ' – stąd przecięcie okręgu z tą warstwicą.',
+        why: 'Wszystkie proste przez A o spadku p% tworzą <b>stożek obrotowy</b> o wierzchołku A (pokazany w 3D). Szukane proste to tworzące stożka leżące w płaszczyźnie β – przecięcie stożka z płaszczyzną przez wierzchołek.',
+        cam: { dir: [0.5, 0.75, 0.75] },
+      });
+      B.a2({ t: 'circle', id: 'okr', c: P2(A), r: ip, s: 'aux' });
+      B.info('okr', 'Okrąg o środku A′ i promieniu i<sub>p</sub> = ' + G.f2(ip) + ' (podstawa stożka spadku p% na poziomie ' + k1 + ')');
+      B.a3({
+        t: 'mesh',
+        id: 'okr',
+        build(THREE, T) {
+          const pos = [],
+            idx = [];
+          const N = 48;
+          const apex = A;
+          pos.push(apex[0], apex[2], apex[1]);
+          for (let i = 0; i <= N; i++) {
+            const a = (i / N) * Math.PI * 2;
+            pos.push(A[0] + 1.6 * ip * Math.cos(a), A[2] - 1.6, A[1] + 1.6 * ip * Math.sin(a));
+            if (i) idx.push(0, i, i + 1);
+          }
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+          g.setIndex(idx);
+          g.computeVertexNormals();
+          return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0x2a6fdb, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
+        },
+      });
+      const sols = [];
+      if (w1) {
+        const dd = V.norm(V.sub(w1.b, w1.a));
+        const f0 = V.sub(w1.a, P2(A));
+        const bq = V.dot(f0, dd),
+          cq = V.dot(f0, f0) - ip * ip;
+        const disc = bq * bq - cq;
+        if (disc >= 0) [-1, 1].forEach((sg) => sols.push(V.add(w1.a, V.mul(dd, -bq + sg * Math.sqrt(disc)))));
+      }
+      B.data.ok = sols.length > 0;
+      ['B', 'C'].forEach((n, i) => {
+        if (!sols[i]) return;
+        const Q = [sols[i][0], sols[i][1], k1];
+        drawPtC(B, n, Q, n, 'res', 'Punkt ' + n + ' – na warstwicy ' + k1 + ' i na okręgu o promieniu i<sub>p</sub>');
+      });
+      B.src('w' + k1, 'A');
+      B.step({
+        title: sols.length ? 'Proste o spadku ' + p.pp + '%: ' + (sols.length === 2 ? 'AB i AC' : 'AB') : 'Brak rozwiązania',
+        co: sols.length ? 'Łączymy A z B i z C – to szukane proste (' + sols.length + ' rozwiązania). Przedłużamy je i stopniujemy (co ' + G.f2(ip) + ').' : 'Okrąg nie przecina warstwicy – płaszczyzna jest łagodniejsza (moduł ' + f1(ival) + ') niż żądana prosta (moduł ' + G.f2(ip) + '): w β nie ma prostej o spadku ' + p.pp + '%.',
+        jak: 'Kontrola: prosta o spadku ' + p.pp + '% nie może być bardziej stroma niż linia spadku płaszczyzny (' + f1(100 / ival) + '%).',
+        why: 'Liczba rozwiązań zależy od tego, czy stożek przecina płaszczyznę (2), jest do niej styczny (1 – wtedy prosta to linia spadku) czy jej nie przecina (0).',
+        cam: { dir: [0.45, 0.8, 0.8] },
+      });
+      sols.forEach((q, i) => {
+        const Q = [q[0], q[1], k1];
+        const dir = V.sub(Q, A);
+        const a = V.add(A, V.mul(dir, -1.6)),
+          b = V.add(A, V.mul(dir, 2.6));
+        const id = 'l' + i;
+        B.a2({ t: 'seg', id, a: P2(a), b: P2(b), s: 'res', label: i ? 'AC' : 'AB' });
+        B.a3({ t: 'seg', id, a, b, s: 'res' });
+        B.info(id, 'Prosta o spadku ' + p.pp + '% leżąca w β (moduł ' + G.f2(ip) + ')');
+        gradeSeg(a, b).forEach((g) => B.a2({ t: 'pt', id, p: P2(g.p), s: 'res', r: 1.8, label: String(g.k), labCls: 'small' }));
+      });
+      B.step({
+        title: 'Wynik i kąty nachylenia',
+        co: 'Płaszczyzna β: α = ' + f1(G.deg(Math.atan(1 / ival))) + '° (spadek ' + f1(100 / ival) + '%); proste: ' + f1(G.deg(Math.atan(p.pp / 100))) + '°.',
+        jak: 'Najedź miarką (📏) między dwa punkty – zobaczysz spadek i nachylenie odcinka.',
+        why: 'Zmień spadek prostych suwakiem – przy p ≥ ' + f1(100 / ival) + '% rozwiązań brak.',
+      });
+    },
+  });
+
+  /* =================================================================
+     5.3 Przebicie płaszczyzny (A,B,C) prostą + widoczność (Lista 5, zad. 2)
+     ================================================================= */
+  const L5Z2 = {
+    A: [3.0, 16.4, 3],
+    B: [14.1, 10.3, -1],
+    C: [15.4, 18.1, 2],
+    poly: [
+      [0.5, 12.0],
+      [18.17, 9.73],
+      [22.4, 17.17],
+      [4.93, 19.43],
+    ],
+    l3: [9.33, 5.17, 3],
+    l2: [10.23, 11.67, 2],
+  };
+  GW.addLesson({
+    id: 'm5-przebicie',
+    mod: 5,
+    zExag: 'auto',
+    lista: 'L5 Z2',
+    title: '5.3 Przebicie płaszczyzny prostą (wielobok δ)',
+    v2title: 'Rzut cechowany – przebicie i widoczność',
+    params: [
+      { k: 'h3', l: 'cecha punktu 3 prostej a', min: 1, max: 6, step: 0.5, v: 3 },
+      { k: 'h2', l: 'cecha punktu 2 prostej a', min: -2, max: 4, step: 0.5, v: 2 },
+      { k: 'gam', l: 'kierunek warstwic pomocniczej γ [°]', min: -80, max: 80, v: 35 },
+    ],
+    measureInfo,
+    mistakes: ['Warstwice płaszczyzny pomocniczej γ prowadzimy przez <b>punkty całkowite prostej</b> – kierunek dowolny, ale wspólny.', 'Widoczność z góry: widoczna jest część prostej <b>nad</b> płaszczyzną – sprawdź cechę prostej i płaszczyzny w jednym punkcie.'],
+    algo:
+      '<ol><li><b>Stopniowanie</b>: na bokach wieloboku i na prostej a wyznaczamy punkty o cechach całkowitych (Tales).</li>' +
+      '<li><b>Warstwice δ</b>: łączymy punkty o równych cechach na bokach.</li>' +
+      '<li><b>Płaszczyzna pomocnicza γ ⊃ a</b>: przez punkty całkowite a prowadzimy równoległe proste (dowolny kierunek) – warstwice γ.</li>' +
+      '<li><b>m = δ ∩ γ</b>: przecięcia warstwic δ i γ o równych cechach. <b>P = m ∩ a</b>.</li>' +
+      '<li><b>Widoczność</b>: część a nad δ widoczna (cecha a &gt; cecha δ w tym miejscu); zmiana w P. Poza wielobokiem prosta zawsze widoczna.</li></ol>',
+    build(p, B) {
+      const { A, B: Bq, C, poly } = L5Z2;
+      const pf = planeFn(A, Bq, C);
+      const P3a = [L5Z2.l3[0], L5Z2.l3[1], p.h3],
+        P2a = [L5Z2.l2[0], L5Z2.l2[1], p.h2];
+      const box = [-1, 0, 24, 24];
+      B.data.F = (x, y) => (G.pointInPoly2([x, y], poly) ? pf.f(x, y) : NaN);
+      B.data.box = box;
+      const poly3 = poly.map((q) => [q[0], q[1], pf.f(q[0], q[1])]);
+      const dirL = V.sub(P2a, P3a);
+      const a0 = V.add(P3a, V.mul(dirL, -0.85)),
+        a1 = V.add(P3a, V.mul(dirL, 2.6));
+      B.step({
+        title: 'Dane: płaszczyzna δ = (A, B, C) i prosta a',
+        co: 'Płaszczyzna <b>δ</b> dana punktami ' + cecha('A', 3) + ', ' + cecha('B', -1) + ', ' + cecha('C', 2) + ' (wielobok). Prosta <b>a</b> przez punkty o cechach ' + f1(p.h3) + ' i ' + f1(p.h2) + '. Wyznaczyć przebicie P i widoczność a.',
+        jak: 'Strzałka na prostej wskazuje kierunek spadku (malejących cech).',
+        why: 'W rzucie cechowanym przebicie szukamy tak jak w Monge’u: przez prostą prowadzimy płaszczyznę pomocniczą.',
+        cam: { dir: [0.4, 0.9, 0.9] },
+      });
+      refPlane(B, box, -2);
+      B.a2({ t: 'pl', id: 'delta', pts: poly, closed: true, s: 'given' });
+      B.a3({ t: 'poly', id: 'delta', pts: poly3, col: '#e8c060', op: 0.4 });
+      B.a3({ t: 'pl', id: 'delta', pts: poly3, closed: true, s: 'given' });
+      B.info('delta', 'Wielobok – fragment płaszczyzny δ');
+      [
+        ['A', A],
+        ['B', Bq],
+        ['C', C],
+      ].forEach(([n, P]) => drawPtC(B, 'p' + n, P, n, 'given', 'Punkt ' + n + ' płaszczyzny δ (cecha ' + f1(P[2]) + ')'));
+      B.a2({ t: 'arrow', id: 'a', a: P2(a0), b: P2(a1), s: 'given' });
+      B.a3({ t: 'seg', id: 'a', a: a0, b: a1, s: 'given', label: 'a' });
+      B.a2({ t: 'text', id: 'a', p: V.add(P2(a1), [0.6, 0.6]), txt: "a'", s: 'note' });
+      B.info('a', 'Prosta a');
+      drawPtC(B, 'a3', P3a, String(p.h3).replace('.', ','), 'given', 'Punkt prostej a o cesze ' + f1(p.h3));
+      drawPtC(B, 'a2', P2a, String(p.h2).replace('.', ','), 'given', 'Punkt prostej a o cesze ' + f1(p.h2));
+      // stopniowanie
+      const sAB = gradeSeg(A, Bq),
+        sBC = gradeSeg(Bq, C),
+        sAC = gradeSeg(A, C);
+      const gl = gradeSeg(a0, a1);
+      B.step({
+        title: 'Stopniowanie boków AB, BC, AC i prostej a',
+        co: 'Punkty o cechach całkowitych: na AB: ' + sAB.map((q) => q.k).join(', ') + '; na BC: ' + sBC.map((q) => q.k).join(', ') + '; na a: ' + gl.map((q) => q.k).join(', ') + '.',
+        jak: 'Twierdzenie Talesa (jak w 5.1). Dla prostej a mamy już dwa punkty całkowite – dalsze odkładamy w tych samych odstępach (moduł prostej = ' + G.f2(V.dist(P2(P3a), P2(P2a)) / Math.max(1e-9, Math.abs(p.h3 - p.h2))) + ').',
+        why: 'Cecha zmienia się liniowo wzdłuż prostej – równe różnice cech to równe odcinki w rzucie.',
+      });
+      [sAB, sBC, sAC].forEach((arr, j) =>
+        arr.forEach((q) => {
+          B.a2({ t: 'pt', id: 'g' + q.k, p: P2(q.p), s: 'aux', r: 1.8, label: String(q.k), labCls: 'small' });
+        })
+      );
+      gl.forEach((q) => B.a2({ t: 'pt', id: 'gl' + q.k, p: P2(q.p), s: 'given', r: 1.8, label: String(q.k), labCls: 'small' }));
+      // warstwice δ
+      const lv = rangeInt(-2, 5);
+      const cs = contourClip(pf, poly, lv);
+      B.step({
+        title: 'Warstwice płaszczyzny δ',
+        co: 'Łączymy punkty o równych cechach na bokach – warstwice δ (' + cs.map((c) => c.lv).join(', ') + ').',
+        jak: 'Warstwice są równoległe – wystarczy jedna, pozostałe ∥ przez punkty całkowite.',
+        why: 'Dwa punkty płaszczyzny o tej samej cesze wyznaczają jej poziomą prostą.',
+      });
+      cs.forEach((c) => {
+        const id = 'wd' + c.lv;
+        B.a2({ t: 'seg', id, a: c.a, b: c.b, s: 'cont' });
+        B.a2({ t: 'text', id, p: V.lerp(c.a, c.b, 0.06), txt: String(c.lv), s: 'hval' });
+        B.a3({ t: 'seg', id, a: [c.a[0], c.a[1], c.lv], b: [c.b[0], c.b[1], c.lv], s: 'cont' });
+        B.info(id, 'Warstwica δ o cesze ' + c.lv);
+      });
+      // γ
+      const gd = [Math.cos(G.rad(p.gam)), Math.sin(G.rad(p.gam))];
+      B.step({
+        title: 'Płaszczyzna pomocnicza γ ⊃ a',
+        co: 'Przez punkty całkowite a prowadzimy równoległe proste – <b>warstwice γ</b>.',
+        jak: 'Kierunek dowolny (byle nie ∥ warstwicom δ); tu ' + p.gam + '°.',
+        why: 'Przez prostą przechodzi nieskończenie wiele płaszczyzn – każda zawiera a; jej warstwice przechodzą przez punkty całkowite a.',
+      });
+      gl.forEach((q) => {
+        const a = V.add(P2(q.p), V.mul(gd, -6)),
+          b = V.add(P2(q.p), V.mul(gd, 6));
+        B.a2({ t: 'seg', id: 'wg' + q.k, a, b, s: 'aux2', w: 0.9 });
+        B.a3({ t: 'seg', id: 'wg' + q.k, a: [a[0], a[1], q.k], b: [b[0], b[1], q.k], s: 'aux2', w: 0.6 });
+        B.info('wg' + q.k, 'Warstwica płaszczyzny pomocniczej γ o cesze ' + q.k);
+      });
+      // m i P
+      const mp = [];
+      gl.forEach((q) => {
+        const w = planeContours(pf, [[-40, -40], [60, -40], [60, 60], [-40, 60]], [q.k])[0];
+        if (!w) return;
+        const r = G.line2(P2(q.p), V.add(P2(q.p), gd), w.a, w.b);
+        if (r) mp.push({ k: q.k, p: r.p });
+      });
+      const fD = a0[2] - pf.f(a0[0], a0[1]),
+        fE = a1[2] - pf.f(a1[0], a1[1]);
+      const t = fD / (fD - fE);
+      const P = V.lerp(a0, a1, t);
+      const inPoly = G.pointInPoly2(P2(P), poly);
+      B.data.ok = inPoly;
+      B.step({
+        title: 'Prosta m = δ ∩ γ i punkt przebicia P',
+        co: 'Przecięcia warstwic δ i γ o równych cechach wyznaczają <b>m</b>; <b>P = m ∩ a</b> (cecha ' + f1(P[2]) + ').' + (inPoly ? '' : ' <b>P leży poza wielobokiem</b> – prosta przebija płaszczyznę δ poza narysowanym fragmentem.'),
+        jak: 'Wystarczą dwa punkty m; trzeci służy do kontroli.',
+        why: 'm i a leżą w γ, więc się przecinają; punkt wspólny leży na a i na m ⊂ δ.',
+      });
+      if (mp.length >= 2) {
+        const a = mp[0].p,
+          b = mp[mp.length - 1].p;
+        const ext = [V.add(a, V.mul(V.sub(a, b), 0.3)), V.add(b, V.mul(V.sub(b, a), 0.3))];
+        B.a2({ t: 'seg', id: 'm', a: ext[0], b: ext[1], s: 'aux', label: "m'" });
+        mp.forEach((q) => {
+          B.a2({ t: 'pt', id: 'm' + q.k, p: q.p, s: 'aux', r: 2.2 });
+          B.info('m' + q.k, 'Punkt prostej m o cesze ' + q.k + ': warstwica δ ∩ warstwica γ', ['wd' + q.k, 'wg' + q.k]);
+        });
+        B.info('m', 'm = δ ∩ γ');
+      }
+      B.a2({ t: 'pt', id: 'P', p: P2(P), s: 'res', label: cecha('P', P[2]) });
+      B.a3({ t: 'pt', id: 'P', p: P, s: 'res', label: 'P' });
+      B.info('P', 'Punkt przebicia prostej a z płaszczyzną δ');
+      // widoczność
+      B.step({
+        title: 'Widoczność prostej a',
+        co: 'Z góry widoczna jest część a leżąca <b>nad</b> δ; w P widoczność się zmienia. Poza wielobokiem prosta jest widoczna.',
+        jak: 'Porównanie cech: w punkcie ' + gl[0].k + ' prostej płaszczyzna ma cechę ' + f1(pf.f(gl[0].p[0], gl[0].p[1])) + ' → prosta jest tam ' + (gl[0].k > pf.f(gl[0].p[0], gl[0].p[1]) ? 'nad' : 'pod') + ' δ.',
+        why: 'W rzucie z góry zasłania to, co wyżej.',
+        cam: { dir: [0.3, 0.8, 1] },
+      });
+      B.end('a');
+      const pcs = G.hlr([{ a: a0, b: a1 }], [{ pts: poly3, pl: G.plane3(poly3[0], poly3[1], poly3[2]) }], { dir: [0, 0, 1] });
+      pcs.forEach((pc) => B.a2({ t: 'seg', id: 'a', a: P2(pc.a), b: P2(pc.b), s: pc.st === 'vis' ? 'vis' : 'hid' }));
+      B.a2({ t: 'arrow', id: 'a', a: V.lerp(P2(a0), P2(a1), 0.92), b: P2(a1), s: 'given' });
+      B.a3({ t: 'seg', id: 'a', a: a0, b: a1, s: 'given', label: 'a' });
+    },
+  });
+
   /* =================================================================
      5.2 Przecięcie płaszczyzn i przebicie prostej
      ================================================================= */
@@ -409,7 +785,8 @@
   GW.addLesson({
     id: 'm5-przeciecie',
     mod: 5,
-    title: '5.2 Krawędź dwóch płaszczyzn, przebicie prostej',
+    zExag: 'auto',
+    title: '5.4 Krawędź dwóch płaszczyzn (skale nachylenia), przebicie prostej',
     v2title: 'Rzut cechowany – przecięcie i przebicie',
     params: [
       { k: 'aA', l: 'α: kierunek spadku [°]', min: -180, max: 180, v: 20 },
@@ -624,277 +1001,408 @@
   });
 
   /* =================================================================
-     5.3 Dach
+     5.5 Krawędź przenikania dwóch wieloboków (Lista 5, zad. 4)
      ================================================================= */
-  function roofOutline(p) {
-    const W = p.W,
-      L = p.L;
-    let poly;
-    if (p.shape === 'rect')
-      poly = [
-        [0, 0],
-        [W, 0],
-        [W, L],
-        [0, L],
-      ];
-    else if (p.shape === 'trap')
-      poly = [
-        [0, 0],
-        [W, 0],
-        [W - 5, L],
-        [4, L],
-      ];
-    else
-      poly = [
-        [0, 2],
-        [W * 0.7, 0],
-        [W, L * 0.45],
-        [W * 0.75, L],
-        [2, L * 0.85],
-      ];
-    return poly.map((q) => [q[0] + 4, q[1] + 4]);
-  }
+  const L5Z4 = {
+    ABCD: [
+      [3.37, 8.93, 3],
+      [10.73, 4.23, 1],
+      [12.87, 15.0, -1],
+      [5.13, 20.37, 1],
+    ],
+    EFG: [
+      [5.17, 2.2, 0],
+      [15.2, 11.17, 3],
+      [7.27, 16.57, 2],
+    ],
+  };
   GW.addLesson({
-    id: 'm5-dach',
+    id: 'm5-wieloboki',
     mod: 5,
-    title: '5.3 Dach – połacie o zadanym nachyleniu',
-    v2title: 'Rzut cechowany dachu (rzut z góry)',
-    opts: [
-      {
-        k: 'shape',
-        l: 'Obrys budynku',
-        choices: [
-          ['rect', 'prostokąt'],
-          ['trap', 'trapez'],
-          ['pent', 'pięciokąt nieregularny'],
-        ],
-        v: 'rect',
-        rebuildFrame: true,
-      },
-    ],
+    zExag: 'auto',
+    lista: 'L5 Z4',
+    title: '5.5 Krawędź przenikania dwóch wieloboków',
+    v2title: 'Rzut cechowany – przenikanie wieloboków ABCD i EFG',
     params: [
-      { k: 'W', l: 'długość [m]', min: 14, max: 34, step: 0.5, v: 26 },
-      { k: 'L', l: 'szerokość [m]', min: 8, max: 22, step: 0.5, v: 14 },
-      { k: 'ang', l: 'nachylenie połaci α [°]', min: 20, max: 60, v: 40 },
-      { k: 'ang1', l: 'nachylenie połaci nr 1 [°]', min: 20, max: 75, v: 40 },
-      { k: 'H0', l: 'cecha okapu [m]', min: 0, max: 8, step: 0.5, v: 3 },
+      { k: 'dE', l: 'zmiana cechy E', min: -3, max: 3, step: 0.5, v: 0 },
+      { k: 'dF', l: 'zmiana cechy F', min: -3, max: 3, step: 0.5, v: 0 },
+      { k: 'dG', l: 'zmiana cechy G', min: -3, max: 3, step: 0.5, v: 0 },
     ],
-    special: {
-      note: 'Najedź na dach (2D) – kropla spłynie po połaci do okapu. Krople w 3D pokazują, że woda zawsze płynie prostopadle do okapu (po linii spadku połaci), a kosze/narożniki tylko rozdzielają strumienie.',
-      ui: [{ type: 'check', k: 'drops', l: 'animowane krople w 3D', v: true }],
-      bind(c) {
-        c.v2.onBgMove = (P) => {
-          c.S.cursor = P;
-          c.app.refreshOverlay();
-        };
-      },
-      overlay(c) {
-        const d = c.data;
-        if (!d.F) return {};
-        const r = flowOverlay(c, d.F, d.box, c.S.cursor && G.pointInPoly2(c.S.cursor, d.poly) ? c.S.cursor : null) || { p2: [], p3: [] };
-        if (c.S.drops && c.k === c.B.steps.length - 1) r.p3.push(d._drops || (d._drops = dropsPrim(d.F, d.box, 70)));
-        return { p2: r.p2, p3: r.p3, info: { flow: 'Spływ wody po połaci – prostopadle do okapu' } };
-      },
-    },
+    measureInfo,
+    mistakes: ['Krawędź przenikania ograniczamy do części <b>wspólnej obu wieloboków</b> – nie rysujemy jej na całej długości prostej k.', 'Widoczność boków ustalamy w każdym „oknie” rzutu: wyżej leżący wielobok zasłania niżej leżący.'],
     algo:
-      '<ol><li>Każda połać przechodzi przez krawędź okapu (bok obrysu, cecha okapu) i ma zadane nachylenie α ⇒ interwał i = 1/tg α. <b>Warstwice połaci</b> to proste ∥ okapu w odstępach i.</li>' +
-      '<li><b>Krawędź dwóch połaci</b> (narożnik, kosz, kalenica) przechodzi przez punkty przecięcia warstwic o tych samych cechach. Przy równych nachyleniach narożnik jest dwusieczną kąta obrysu.</li>' +
-      '<li>Krawędzie prowadzimy od narożników budynku do pierwszego spotkania z inną krawędzią – w tym punkcie schodzą się trzy połacie; dalej biegnie krawędź połaci nie-sąsiednich.</li>' +
-      '<li><b>Kalenica</b> – krawędź pozioma (obie połacie mają ten sam spadek w przeciwnych kierunkach i równoległe okapy).</li>' +
-      '<li>Kontrola: każda połać to wielokąt oparty na jednym boku obrysu; z każdego wierzchołka obrysu wychodzi dokładnie jedna krawędź.</li></ol>',
+      '<ol><li>Stopniujemy boki obu wieloboków i rysujemy warstwice obu płaszczyzn.</li>' +
+      '<li><b>Prosta k</b> = przez punkty przecięcia warstwic o równych cechach.</li>' +
+      '<li>Część k leżąca jednocześnie w obu wielobokach = <b>krawędź przenikania</b> MN (jej końce to przebicia boków jednego wieloboku z drugim).</li>' +
+      '<li><b>Widoczność</b> z góry: po jednej stronie MN wyżej jest jeden wielobok, po drugiej – drugi.</li></ol>',
     build(p, B) {
-      const poly = roofOutline(p);
-      const n = poly.length;
-      const H0 = p.H0;
-      const tans = poly.map((q, i) => Math.tan(G.rad(i === 0 ? p.ang1 : p.ang)));
-      // normalne wewnętrzne
-      const area = G.polyArea2(poly);
-      const edges = poly.map((a, i) => {
-        const b = poly[(i + 1) % n];
-        const d = V.norm(V.sub(b, a));
-        let nin = V.perp2(d);
-        if (area < 0) nin = V.mul(nin, -1);
-        return { a, b, d, nin, tan: tans[i] };
+      const Q = L5Z4.ABCD.map((q) => q.slice());
+      const pfQ = planeFn(Q[0], Q[1], Q[2]);
+      Q[3][2] = pfQ.f(Q[3][0], Q[3][1]);
+      const T = L5Z4.EFG.map((q, i) => [q[0], q[1], q[2] + [p.dE, p.dF, p.dG][i]]);
+      const pfT = planeFn(T[0], T[1], T[2]);
+      const box = [0, 0, 18, 24];
+      B.data.F = (x, y) => (G.pointInPoly2([x, y], Q.map(P2)) ? pfQ.f(x, y) : G.pointInPoly2([x, y], T.map(P2)) ? pfT.f(x, y) : NaN);
+      B.data.box = box;
+      const nQ = ['A', 'B', 'C', 'D'],
+        nT = ['E', 'F', 'G'];
+      B.step({
+        title: 'Dane: wieloboki ABCD i EFG',
+        co: 'Wielobok ' + nQ.map((n, i) => cecha(n, [3, 1, -1, 1][i])).join(', ') + ' oraz trójkąt ' + nT.map((n, i) => cecha(n, T[i][2])).join(', ') + '. Wyznaczyć krawędź przenikania i widoczność.',
+        jak: 'Najedź na wierzchołki – w 3D zobaczysz ich wysokości.',
+        why: 'Dwa wieloboki płaskie przenikają się wzdłuż odcinka leżącego na krawędzi przecięcia ich płaszczyzn.',
+        cam: { dir: [0.4, 0.9, 0.9] },
       });
-      const hEdge = (i, P) => H0 + V.dot(V.sub([P[0], P[1]], edges[i].a), edges[i].nin) * edges[i].tan;
-      const F = (x, y) => (G.pointInPoly2([x, y], poly) ? Math.min(...edges.map((e, i) => hEdge(i, [x, y]))) : NaN);
-      const bb = G.bbox2(poly);
-      B.data.F = F;
-      B.data.box = bb;
-      B.data.poly = poly;
-      // ściany = obwiednia dolna
-      const faces = edges.map((e, i) => {
-        let f = poly.map((q) => [q[0], q[1], 0]);
-        edges.forEach((e2, j) => {
-          if (j === i) return;
-          // h_i - h_j <= 0  :  (nin_i*tan_i - nin_j*tan_j)·P - c <= 0
-          const a = V.sub(V.mul(e.nin, e.tan), V.mul(e2.nin, e2.tan));
-          const c = V.dot(e.a, V.mul(e.nin, e.tan)) - V.dot(e2.a, V.mul(e2.nin, e2.tan));
-          f = G.clipPoly(f, { n: [a[0], a[1], 0], d: c });
+      refPlane(B, box, -2);
+      [
+        [Q, nQ, '#e8c060', 'Q'],
+        [T, nT, '#7fb3e0', 'T'],
+      ].forEach(([pts, nm, col, tag]) => {
+        B.a2({ t: 'pl', id: tag, pts: pts.map(P2), closed: true, s: 'given' });
+        B.a3({ t: 'poly', id: tag, pts, col, op: 0.45 });
+        B.a3({ t: 'pl', id: tag, pts, closed: true, s: 'given' });
+        pts.forEach((P, i) => drawPtC(B, tag + nm[i], P, nm[i], 'given', 'Wierzchołek ' + nm[i] + ' (cecha ' + f1(P[2]) + ')'));
+      });
+      B.info('Q', 'Wielobok ABCD');
+      B.info('T', 'Wielobok EFG');
+      const lv = rangeInt(-2, 6);
+      const cQ = contourClip(pfQ, Q.map(P2), lv),
+        cT = contourClip(pfT, T.map(P2), lv);
+      B.step({
+        title: 'Stopniowanie boków i warstwice obu płaszczyzn',
+        co: 'Warstwice ABCD (brązowe) i EFG (niebieskie) co 1 m.',
+        jak: 'Na bokach o różnych cechach wyznaczamy punkty całkowite (Tales) i łączymy równe cechy.',
+        why: 'Warstwice to proste poziome – przecięcie dwóch płaszczyzn znajdziemy, porównując warstwice o tej samej cesze.',
+      });
+      [
+        [cQ, 'wq', 'cont'],
+        [cT, 'wt', 'aux'],
+      ].forEach(([cs, pre, st]) =>
+        cs.forEach((c) => {
+          B.a2({ t: 'seg', id: pre + c.lv, a: c.a, b: c.b, s: st, w: 0.9 });
+          B.a2({ t: 'text', id: pre + c.lv, p: V.lerp(c.a, c.b, pre === 'wq' ? 0.08 : 0.92), txt: String(c.lv), s: 'hval' });
+          B.a3({ t: 'seg', id: pre + c.lv, a: [c.a[0], c.a[1], c.lv], b: [c.b[0], c.b[1], c.lv], s: st, w: 0.6 });
+          B.info(pre + c.lv, 'Warstwica ' + (pre === 'wq' ? 'ABCD' : 'EFG') + ' o cesze ' + c.lv);
+        })
+      );
+      // prosta k
+      const big = [[-60, -60], [80, -60], [80, 80], [-60, 80]];
+      const ip = [];
+      lv.forEach((k) => {
+        const a = planeContours(pfQ, big, [k])[0],
+          b = planeContours(pfT, big, [k])[0];
+        if (!a || !b) return;
+        const r = G.line2(a.a, a.b, b.a, b.b);
+        if (r) ip.push({ k, p: r.p });
+      });
+      B.step({
+        title: 'Prosta k = krawędź przecięcia płaszczyzn',
+        co: 'Punkty przecięcia warstwic o równych cechach: ' + ip.map((q) => q.k).join(', ') + ' → prosta <b>k</b>.',
+        jak: 'Gdy warstwice o danej cesze nie przecinają się w obrębie rysunku, przedłużamy je.',
+        why: 'Punkt przecięcia warstwic o cesze n leży na wysokości n w obu płaszczyznach – należy do ich krawędzi.',
+      });
+      let k0 = null,
+        kd = null;
+      if (ip.length >= 2) {
+        k0 = ip[0].p;
+        kd = V.norm(V.sub(ip[ip.length - 1].p, ip[0].p));
+        const c = G.clipLine2(k0, kd, box);
+        if (c) B.a2({ t: 'seg', id: 'k', a: c[0], b: c[1], s: 'aux', label: "k'" });
+        ip.forEach((q) => {
+          if (q.p[0] < box[0] || q.p[0] > box[2] || q.p[1] < box[1] || q.p[1] > box[3]) return;
+          B.a2({ t: 'pt', id: 'k' + q.k, p: q.p, s: 'aux', r: 2.2 });
+          B.info('k' + q.k, 'Punkt prostej k o cesze ' + q.k, ['wq' + q.k, 'wt' + q.k]);
         });
-        return f.map((q) => [q[0], q[1], hEdge(i, q)]);
-      });
+        B.info('k', 'Prosta k – krawędź przecięcia płaszczyzn obu wieloboków');
+      }
+      // MN
+      const S1 = new G.Polyhedron([Q]),
+        S2 = new G.Polyhedron([T]);
+      const segs = G.solidIntersection(S1, S2);
       B.step({
-        title: 'Dane: obrys budynku, cecha okapu, nachylenie połaci',
-        co: 'Obrys ' + n + '-boczny, okap na wysokości <b>' + f1(H0) + ' m</b>, połacie nachylone pod kątem <b>' + p.ang + '°</b>' + (p.ang1 !== p.ang ? ' (połać nr 1: ' + p.ang1 + '°)' : '') + '.',
-        jak: 'Numerujemy boki obrysu – nad każdym powstanie jedna połać. Interwał połaci: i = 1/tg α = ' + f1(1 / Math.tan(G.rad(p.ang))) + ' m.',
-        why: 'Połać to płaszczyzna zawierająca okap i nachylona pod kątem α – jest wyznaczona jednoznacznie (jak płaszczyzna przez prostą poziomą o zadanym spadku).',
-        cam: { dir: [0.6, 0.9, 0.8] },
+        title: 'Krawędź przenikania MN',
+        co: segs.length ? 'Z prostej k bierzemy część leżącą w obu wielobokach: odcinek <b>MN</b>.' : 'Wieloboki się nie przenikają (k omija część wspólną).',
+        jak: 'Końce M, N to punkty, w których k wychodzi z jednego z wieloboków – czyli przebicia boków jednego wieloboku płaszczyzną drugiego.',
+        why: 'Punkt krawędzi przenikania musi należeć do obu figur, nie tylko do obu płaszczyzn.',
       });
-      B.a2({ t: 'pl', id: 'obrys', pts: poly, closed: true, s: 'vis' });
-      B.info('obrys', 'Obrys budynku = okapy (cecha ' + f1(H0) + ')');
-      edges.forEach((e, i) => {
-        const m = V.mid(e.a, e.b);
-        B.a2({ t: 'text', id: 'en' + i, p: V.add(m, V.mul(e.nin, -2.4)), txt: String(i + 1), s: 'note' });
-        B.info('en' + i, 'Okap nr ' + (i + 1) + ', połać nachylona ' + G.f0(G.deg(Math.atan(e.tan))) + '°');
+      B.data.ok = segs.length > 0;
+      segs.forEach((s, i) => {
+        B.a2({ t: 'seg', id: 'MN', a: P2(s.a), b: P2(s.b), s: 'res' });
+        B.a3({ t: 'seg', id: 'MN', a: s.a, b: s.b, s: 'res' });
+        B.a2({ t: 'pt', id: 'M', p: P2(s.a), s: 'res', label: cecha('M', s.a[2]) });
+        B.a2({ t: 'pt', id: 'N', p: P2(s.b), s: 'res', label: cecha('N', s.b[2]) });
+        B.a3({ t: 'pt', id: 'M', p: s.a, s: 'res', label: 'M' });
+        B.a3({ t: 'pt', id: 'N', p: s.b, s: 'res', label: 'N' });
       });
-      // ściany budynku 3D
-      poly.forEach((a, i) => {
-        const b = poly[(i + 1) % n];
-        B.a3({ t: 'poly', id: 'wall', pts: [[a[0], a[1], 0], [b[0], b[1], 0], [b[0], b[1], H0], [a[0], a[1], H0]], col: '#cccccc', op: 0.6 });
-      });
-      B.a3({ t: 'pl', id: 'obrys', pts: poly.map((q) => [q[0], q[1], H0]), closed: true, s: 'given' });
-      B.info('wall', 'Ściany budynku (do wysokości okapu)');
-      // warstwice połaci
-      const maxH = Math.max(...faces.flat().map((q) => q[2]));
-      const lv = rangeInt(H0 + 1, maxH);
+      B.info('MN', 'Krawędź przenikania wieloboków');
+      // widoczność
       B.step({
-        title: 'Warstwice połaci',
-        co: 'Dla każdej połaci proste ∥ okapu co interwał i (cechy ' + lv.join(', ') + ').',
-        jak: 'Warstwica o cesze n połaci nad bokiem k: prosta ∥ bokowi k, odsunięta do wnętrza o (n − ' + f1(H0) + ')·i.',
-        why: 'Wysokość połaci rośnie liniowo wraz z odległością od okapu: Δh = d·tg α. Stąd równe odstępy warstwic.',
+        title: 'Widoczność wieloboków',
+        co: 'Boki widoczne z góry – grubo, zasłonięte – kreskowo cienko.',
+        jak: 'W miejscu, gdzie rzuty boków się krzyżują, porównujemy cechy obu punktów zbieżnych: wyżej leżący jest widoczny. Widoczność zmienia się na MN.',
+        why: 'Z góry zasłania to, co wyżej – po każdej stronie krawędzi przenikania wyżej leży inny wielobok.',
+        cam: { dir: [0.2, 0.4, 1] },
       });
-      edges.forEach((e, i) => {
-        lv.forEach((k) => {
-          const off = (k - H0) / e.tan;
-          const P = V.add(e.a, V.mul(e.nin, off));
-          const c = G.clipLine2(P, e.d, [bb[0] - 1, bb[1] - 1, bb[2] + 1, bb[3] + 1]);
-          if (!c) return;
-          // przytnij do obrysu
-          const ts = [];
-          for (let j = 0; j < n; j++) {
-            const r = G.line2(P, V.add(P, e.d), poly[j], poly[(j + 1) % n]);
-            if (r && r.u >= -1e-9 && r.u <= 1 + 1e-9) ts.push(r.t);
-          }
-          if (ts.length < 2) return;
-          const a = V.add(P, V.mul(e.d, Math.min(...ts))),
-            b = V.add(P, V.mul(e.d, Math.max(...ts)));
-          const id = 'rw' + i + '_' + k;
-          B.a2({ t: 'seg', id, a, b, s: 'cont', w: 0.7 });
-          B.a3({ t: 'seg', id, a: [a[0], a[1], k], b: [b[0], b[1], k], s: 'cont', w: 0.5, op: 0.7 });
-          B.info(id, 'Warstwica połaci nr ' + (i + 1) + ' o cesze ' + k + ' m (rysowana na całym obrysie – nadmiar zostanie pominięty)');
-        });
-      });
-      // krawędzie dachu
-      const redges = [];
-      faces.forEach((f, i) => {
-        for (let k = 0; k < f.length; k++) {
-          const a = f[k],
-            b = f[(k + 1) % f.length];
-          if (V.dist(a, b) < 1e-6) continue;
-          // czy na obrysie?
-          const onOutline = Math.abs(a[2] - H0) < 1e-6 && Math.abs(b[2] - H0) < 1e-6;
-          if (onOutline) continue;
-          const key = [a, b]
-            .map((q) => q.map((v) => v.toFixed(3)).join(','))
-            .sort()
-            .join('|');
-          let r = redges.find((q) => q.key === key);
-          if (!r) redges.push((r = { key, a, b, faces: [] }));
-          r.faces.push(i);
-        }
-      });
-      redges.forEach((r) => {
-        const atV = poly.some((q) => V.dist([q[0], q[1]], P2(r.a)) < 1e-4 || V.dist([q[0], q[1]], P2(r.b)) < 1e-4);
-        r.kind = Math.abs(r.a[2] - r.b[2]) < 1e-4 ? 'kalenica' : atV ? 'narożnik' : 'krawędź (połacie nie-sąsiednie)';
-      });
-      const hips = redges.filter((r) => r.kind === 'narożnik'),
-        rest = redges.filter((r) => r.kind !== 'narożnik');
-      B.step({
-        title: 'Narożniki – krawędzie połaci sąsiednich',
-        co: 'Z każdego wierzchołka obrysu prowadzimy krawędź dwóch połaci sąsiednich (<b>narożnik</b>) do punktu, w którym spotyka trzecią połać.',
-        jak: 'Krawędź przechodzi przez wierzchołek obrysu (wspólny punkt obu okapów, cecha ' + f1(H0) + ') i przez punkty przecięcia warstwic tych połaci o równych cechach. ' + (p.ang1 === p.ang ? 'Przy równych nachyleniach to <b>dwusieczna</b> kąta obrysu.' : 'Połać nr 1 jest bardziej stroma – narożniki przy niej odchylają się od dwusiecznej (ku bardziej stromej połaci).'),
-        why: 'Punkt przecięcia warstwic o cesze n obu połaci leży w obu płaszczyznach – należy do ich krawędzi. Równe nachylenia ⇒ równe odległości od obu okapów ⇒ dwusieczna.',
-      });
-      hips.forEach((r, i) => {
-        const id = 'hip' + i;
-        B.a2({ t: 'seg', id, a: P2(r.a), b: P2(r.b), s: 'res' });
-        B.a3({ t: 'seg', id, a: r.a, b: r.b, s: 'res' });
-        B.info(id, 'Narożnik: krawędź połaci ' + r.faces.map((f) => f + 1).join(' i '));
-        r.faces.forEach((f) => B.src('rw' + f + '_' + lv[Math.min(1, lv.length - 1)]));
-      });
-      B.step({
-        title: 'Kalenice i pozostałe krawędzie',
-        co: rest.length ? 'Pozostałe krawędzie: ' + rest.map((r) => r.kind + ' (połacie ' + r.faces.map((f) => f + 1).join('–') + ')').join('; ') + '.' : 'Dach kopertowy zbiega się w jednym punkcie.',
-        jak: 'Od punktu spotkania trzech połaci prowadzimy krawędź dwóch połaci, które jeszcze się nie przecięły – znów przez punkty przecięcia ich równocechowych warstwic. ' + (rest.some((r) => r.kind === 'kalenica') ? 'Kalenica jest pozioma: łączy punkty o tej samej cesze.' : ''),
-        why: 'W każdym węźle dachu schodzą się dokładnie trzy połacie; krawędź dwóch z nich kończy się, gdy dojdzie do niej trzecia połać (niżej położona połać „wygrywa” – dach to dolna obwiednia płaszczyzn połaci).',
-      });
-      rest.forEach((r, i) => {
-        const id = 'rr' + i;
-        B.a2({ t: 'seg', id, a: P2(r.a), b: P2(r.b), s: r.kind === 'kalenica' ? 'res2' : 'res' });
-        B.a3({ t: 'seg', id, a: r.a, b: r.b, s: r.kind === 'kalenica' ? 'res2' : 'res' });
-        B.info(id, (r.kind === 'kalenica' ? 'Kalenica (pozioma, cecha ' + f1(r.a[2]) + ')' : 'Krawędź połaci ' + r.faces.map((f) => f + 1).join(' i ')) + '');
-      });
-      // cechy węzłów
-      const nodes = G.dedupe(redges.flatMap((r) => [r.a, r.b]).filter((q) => q[2] > H0 + 1e-3), 1e-3);
-      nodes.forEach((q, i) => {
-        B.a2({ t: 'pt', id: 'node' + i, p: P2(q), s: 'res', r: 2.6, label: '(' + f1(q[2]) + ')', labCls: 'brown' });
-        B.info('node' + i, 'Węzeł dachu – cecha ' + f1(q[2]) + ' m');
-      });
-      B.step({
-        title: 'Wynik: rzut dachu i model',
-        co: 'Połacie dachu (rzut z cechami węzłów) i model 3D.',
-        jak: 'Warstwice zostawiamy tylko w obrębie własnych połaci. Najedź na połać – zobaczysz jej numer i nachylenie.',
-        why: 'Spróbuj zmienić nachylenie połaci nr 1 lub kształt obrysu – zobacz, jak przesuwają się narożniki i kalenica.',
-        cam: { dir: [0.6, 0.8, 0.7] },
-      });
-      B.endWhere((q) => /^rw/.test(q.id));
-      faces.forEach((f, i) => {
-        if (f.length < 3) return;
-        const id = 'face' + i;
-        B.a3({ t: 'poly', id, pts: f, col: ['#c0563a', '#d0704a', '#b04a30', '#d88060', '#c86448'][i % 5], op: 0.95 });
-        B.a2({ t: 'poly', id, pts: f.map(P2), fill: ['#c0563a', '#d0704a', '#b04a30', '#d88060', '#c86448'][i % 5], op: 0.18 });
-        B.info(id, 'Połać nr ' + (i + 1) + ' (nachylenie ' + G.f0(G.deg(Math.atan(edges[i].tan))) + '°)');
-        // warstwice w obrębie połaci
-        const e = edges[i];
-        lv.forEach((k) => {
-          const P = V.add(e.a, V.mul(e.nin, (k - H0) / e.tan));
-          const f2 = f.map(P2);
-          const ts = [];
-          for (let j = 0; j < f2.length; j++) {
-            const r = G.line2(P, V.add(P, e.d), f2[j], f2[(j + 1) % f2.length]);
-            if (r && r.u >= -1e-9 && r.u <= 1 + 1e-9) ts.push(r.t);
-          }
-          if (ts.length < 2) return;
-          const a = V.add(P, V.mul(e.d, Math.min(...ts))),
-            b = V.add(P, V.mul(e.d, Math.max(...ts)));
-          if (V.dist(a, b) < 0.05) return;
-          B.a2({ t: 'seg', id, a, b, s: 'cont', w: 0.7 });
-          B.a3({ t: 'seg', id: id + 'w', a: [a[0], a[1], k + 0.03], b: [b[0], b[1], k + 0.03], s: 'cont', w: 0.5 });
-        });
-      });
+      B.end('Q', 'T');
+      const edges = [];
+      [Q, T].forEach((pts) => pts.forEach((a, i) => edges.push({ a, b: pts[(i + 1) % pts.length] })));
+      const faces = [
+        { pts: Q, pl: G.plane3(Q[0], Q[1], Q[2]) },
+        { pts: T, pl: G.plane3(T[0], T[1], T[2]) },
+      ];
+      G.hlr(edges, faces, { dir: [0, 0, 1] }).forEach((pc) => B.a2({ t: 'seg', id: 'vis', a: P2(pc.a), b: P2(pc.b), s: pc.st === 'vis' ? 'vis' : 'hid' }));
+      B.info('vis', 'Bok wieloboku z widocznością');
+      B.a3({ t: 'pl', id: 'Q', pts: Q, closed: true, s: 'given' });
+      B.a3({ t: 'pl', id: 'T', pts: T, closed: true, s: 'given' });
     },
   });
 
   /* =================================================================
-     5.4 Roboty ziemne: nasyp / wykop na terenie
+     5.6 Roboty ziemne: platforma / droga na terenie
      ================================================================= */
+  /* teren z warstwic (interpolacja odległościowa między sąsiednimi warstwicami) */
+  function contourTerrain(contours, box, nx = 220, ny = 220) {
+    const cs = contours
+      .map((c) => {
+        const pts = c.pts;
+        const n = pts.length;
+        const d0 = V.norm(V.sub(pts[0], pts[1])),
+          d1 = V.norm(V.sub(pts[n - 1], pts[n - 2]));
+        return { h: c.h, pts: [V.add(pts[0], V.mul(d0, 400))].concat(pts, [V.add(pts[n - 1], V.mul(d1, 400))]) };
+      })
+      .sort((a, b) => a.h - b.h);
+    const near = (q, P) => {
+      let bd = 1e18,
+        side = 1;
+      for (let i = 0; i + 1 < P.length; i++) {
+        const a = P[i],
+          b = P[i + 1];
+        const e = V.sub(b, a);
+        const L2 = V.dot(e, e);
+        let t = V.dot(V.sub(q, a), e) / L2;
+        t = Math.max(0, Math.min(1, t));
+        const X = V.add(a, V.mul(e, t));
+        const d = V.dist(q, X);
+        if (d < bd - 1e-12) {
+          bd = d;
+          let dir = e;
+          if (t <= 0 && i > 0) dir = V.sub(b, P[i - 1]);
+          if (t >= 1 && i + 2 < P.length) dir = V.sub(P[i + 2], a);
+          side = V.cross2(dir, V.sub(q, X)) >= 0 ? 1 : -1;
+        }
+      }
+      return { d: bd, side };
+    };
+    // orientacja: strona wyższa
+    cs.forEach((c, i) => {
+      const m = c.pts[Math.floor(c.pts.length / 2)];
+      const other = cs[i + 1] || cs[i - 1];
+      const r = near(m, other.pts);
+      const sOther = (() => {
+        // strona, po której leży sąsiednia warstwica
+        const q = other.pts[Math.floor(other.pts.length / 2)];
+        return near(q, c.pts).side;
+      })();
+      void r;
+      c.up = cs[i + 1] ? sOther : -sOther;
+    });
+    const raw = (x, y) => {
+      const q = [x, y];
+      const info = cs.map((c) => {
+        const r = near(q, c.pts);
+        return { d: r.d, up: r.side === c.up, h: c.h };
+      });
+      let i = -1;
+      for (let k = 0; k < info.length; k++) if (info[k].up) i = k;
+      if (i >= 0 && i < info.length - 1) {
+        const a = info[i],
+          b = info[i + 1];
+        return a.h + ((b.h - a.h) * a.d) / (a.d + b.d + 1e-12);
+      }
+      if (i === info.length - 1) {
+        const a = info[i],
+          b = info[i - 1];
+        const sp = Math.max(1, b.d - a.d);
+        return a.h + 0.95 * Math.tanh((((a.h - b.h) * a.d) / sp) / 0.95);
+      }
+      const a = info[0],
+        b = info[1];
+      const sp = Math.max(1, b.d - a.d);
+      return a.h - 0.95 * Math.tanh((((b.h - a.h) * a.d) / sp) / 0.95);
+    };
+    // siatka + interpolacja dwuliniowa (szybko)
+    const gx0 = box[0],
+      gy0 = box[1],
+      sx = (box[2] - box[0]) / nx,
+      sy = (box[3] - box[1]) / ny;
+    const Gd = new Float64Array((nx + 1) * (ny + 1));
+    for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) Gd[j * (nx + 1) + i] = raw(gx0 + i * sx, gy0 + j * sy);
+    return (x, y) => {
+      let fx = (x - gx0) / sx,
+        fy = (y - gy0) / sy;
+      fx = Math.max(0, Math.min(nx - 1e-9, fx));
+      fy = Math.max(0, Math.min(ny - 1e-9, fy));
+      const i = Math.floor(fx),
+        j = Math.floor(fy);
+      const u = fx - i,
+        v = fy - j;
+      const w = nx + 1;
+      return Gd[j * w + i] * (1 - u) * (1 - v) + Gd[j * w + i + 1] * u * (1 - v) + Gd[(j + 1) * w + i] * (1 - u) * v + Gd[(j + 1) * w + i + 1] * u * v;
+    };
+  }
+  const pxC = (arr, f) => arr.map((q) => f(q));
+  const EW = {
+    L5Z1: (() => {
+      const k = 4.6;
+      const tr = (q) => [q[0] / k, q[1] / k];
+      const C = [
+        [73, [[70, 437], [200, 432], [300, 420], [400, 400], [470, 375], [530, 345], [580, 300], [630, 245], [680, 185], [718, 130]]],
+        [72, [[70, 551], [200, 545], [300, 532], [400, 512], [480, 485], [545, 455], [600, 410], [650, 365], [700, 320], [750, 250], [800, 190], [848, 130]]],
+        [71, [[205, 722], [300, 690], [400, 650], [500, 605], [560, 570], [650, 500], [720, 445], [777, 395], [850, 320], [920, 250], [990, 180], [1043, 137]]],
+        [70, [[523, 732], [600, 680], [700, 620], [777, 570], [850, 500], [920, 430], [1000, 360], [1100, 290], [1200, 230], [1280, 177]]],
+      ];
+      return {
+        name: '📋 Lista 5 · zad. 1: platforma +72 i droga dojazdowa (do +70)',
+        contours: C.map(([h, pts]) => ({ h, pts: pxC(pts, tr) })),
+        box: [0, 0, 1321 / k, 831 / k],
+        outline: [
+          [545, 307, 72],
+          [777, 307, 72],
+          [777, 507, 72],
+          [777, 665, 70],
+          [693, 665, 70],
+          [693, 507, 72],
+          [545, 507, 72],
+        ].map((q) => tr(q).concat([q[2]])),
+        hD: (x, y) => {
+          const py = y * k;
+          return py <= 507 ? 72 : 72 - (2 * (py - 507)) / (665 - 507);
+        },
+        mw: 10,
+        mn: 10,
+        unit: 'mm',
+        spots: [
+          [215, 255, 73],
+          [1060, 515, 70],
+        ].map((q) => tr(q).concat([q[2]])),
+        note: 'Moduły skarp m<sub>w</sub> = m<sub>n</sub> (z podziałki na rysunku); droga opada od platformy +72 do +70 (jak w wersji aksonometrycznej z wykładu).',
+      };
+    })(),
+    L5Z5: (() => {
+      const k = 6.5;
+      const tr = (q) => [q[0] / k, q[1] / k];
+      const C = [
+        [44, [[50, 345], [100, 330], [150, 315], [200, 300], [250, 282], [300, 262], [350, 240], [400, 215], [450, 185], [500, 150], [550, 112], [600, 72], [645, 37]]],
+        [43, [[50, 457], [100, 440], [150, 425], [200, 408], [250, 390], [300, 370], [350, 345], [400, 315], [450, 285], [500, 255], [550, 220], [600, 188], [650, 155]]],
+        [42, [[45, 580], [100, 557], [150, 537], [218, 510], [300, 470], [350, 442], [400, 415], [440, 397], [500, 360], [550, 320], [600, 285], [650, 257]]],
+        [41, [[45, 795], [100, 768], [150, 742], [200, 715], [250, 688], [300, 660], [350, 632], [400, 600], [450, 568], [500, 532], [530, 505], [560, 478], [600, 450], [650, 412]]],
+        [40, [[318, 832], [400, 790], [500, 735], [600, 665], [652, 610]]],
+      ];
+      return {
+        name: '📋 Lista 5 · zad. 5: platforma +42 i droga wznosząca się do (44)',
+        contours: C.map(([h, pts]) => ({ h, pts: pxC(pts, tr) })),
+        box: [0, 0, 697 / k, 866 / k],
+        outline: [
+          [218, 185, 44],
+          [318, 185, 44],
+          [318, 397, 42],
+          [530, 397, 42],
+          [530, 605, 42],
+          [218, 605, 42],
+          [218, 397, 42],
+        ].map((q) => tr(q).concat([q[2]])),
+        hD: (x, y) => {
+          const py = y * k;
+          return py >= 397 ? 42 : 42 + (2 * (397 - py)) / (397 - 185);
+        },
+        mw: 8,
+        mn: 11,
+        unit: 'mm',
+        spots: [
+          [360, 70, 44],
+          [580, 770, 40],
+        ].map((q) => tr(q).concat([q[2]])),
+        note: 'Moduły: m<sub>w</sub> = 8 mm, m<sub>n</sub> = 11 mm (w treści „1.1” – na rysunku pasek m<sub>n</sub> jest ok. 1,4× dłuższy od m<sub>w</sub>, więc przyjęto 11 mm).',
+      };
+    })(),
+    droga: (() => {
+      const T = (x, y) => 24.2 + 0.035 * x + 2.6 * Math.exp(-((x - 46) ** 2 + (y - 40) ** 2) / 260) - 1.4 * Math.exp(-((x - 20) ** 2 + (y - 12) ** 2) / 200) + 0.012 * y;
+      const a = [4, 14],
+        b = [76, 38];
+      const d = V.norm(V.sub(b, a)),
+        n = V.perp2(d);
+      const w = 4;
+      const P = (q, s, h) => V.add(q, V.mul(n, s)).concat([h]);
+      return {
+        name: 'Przykład z książki: droga pochyła I(25) → II(27) w terenie (stożki skarp)',
+        T,
+        box: [0, 0, 80, 56],
+        outline: [P(a, -w, 25), P(b, -w, 27), P(b, w, 27), P(a, w, 25)],
+        open: [false, true, false, true],
+        hD: (x, y) => 25 + (2 * V.dot(V.sub([x, y], a), d)) / V.dist(a, b),
+        mw: 1,
+        mn: 1.5,
+        unit: 'm',
+        note: 'Droga o szerokości 8 m wznosi się od I(25) do II(27). Krawędzie drogi są pochyłe, więc skarpy wyznaczamy <b>stożkami</b>: z punktu krawędzi o cesze k zakreślamy okrąg o promieniu m (dla cechy k ∓ 1), a warstwica skarpy jest styczna do okręgów.',
+      };
+    })(),
+    plac: (() => {
+      const T = (x, y) => 3 + 0.085 * x + 0.04 * y + 3 * Math.exp(-((x - 60) ** 2 + (y - 15) ** 2) / 300) - 2 * Math.exp(-((x - 20) ** 2 + (y - 45) ** 2) / 250);
+      const c = [40, 30],
+        th = G.rad(15);
+      const R = (q) => [c[0] + q[0] * Math.cos(th) - q[1] * Math.sin(th), c[1] + q[0] * Math.sin(th) + q[1] * Math.cos(th)];
+      const pts = [
+        [-12, -7],
+        [12, -7],
+        [12, 7],
+        [-12, 7],
+      ].map((q) => R(q).concat([7.5]));
+      return { name: 'Przykład: plac poziomy +7,5 na stoku ze wzgórzem', T, box: [0, 0, 80, 60], outline: pts, hD: () => 7.5, mw: 1, mn: 1.5, unit: 'm', note: 'Skarpy: wykop 1:1, nasyp 1:1,5.' };
+    })(),
+  };
+  /* obwiednia stożków wzdłuż krawędzi o liniowo zmiennej cesze (zamknięta postać) */
+  function edgeEnv(e, q, m, fill) {
+    const d = e.d,
+      L = e.L;
+    const w = V.sub(q, e.a);
+    const sq = V.dot(w, d);
+    const r = Math.abs(V.cross2(d, w));
+    const g = (e.hb - e.ha) / L;
+    const u = g * m;
+    let s;
+    if (Math.abs(u) < 0.999999) s = fill ? sq + (r * u) / Math.sqrt(1 - u * u) : sq - (r * u) / Math.sqrt(1 - u * u);
+    else s = fill ? (u > 0 ? L : 0) : u > 0 ? 0 : L;
+    s = Math.max(0, Math.min(L, s));
+    const dist = Math.hypot(s - sq, r);
+    return fill ? e.ha + g * s - dist / m : e.ha + g * s + dist / m;
+  }
+
+  GW.EW = EW;
   GW.addLesson({
     id: 'm5-skarpy',
     mod: 5,
-    title: '5.4 Roboty ziemne: skarpy nasypu i wykopu',
+    zExag: 'auto',
+    lista: 'L5 Z1, Z5',
+    title: '5.6 Roboty ziemne: skarpy nasypów i wykopów (platforma, droga)',
     v2title: 'Plan warstwicowy – granice robót ziemnych',
-    params: [
-      { k: 'H', l: 'cecha placu H [m]', min: 4, max: 11, step: 0.25, v: 7.5 },
-      { k: 'nN', l: 'nasyp 1 : n,  n =', min: 1, max: 3, step: 0.1, v: 1.5 },
-      { k: 'nW', l: 'wykop 1 : m,  m =', min: 0.5, max: 2.5, step: 0.1, v: 1 },
-      { k: 'rot', l: 'obrót placu [°]', min: -40, max: 40, v: 15 },
-      { k: 'pw', l: 'długość placu [m]', min: 12, max: 34, v: 24 },
-      { k: 'pl', l: 'szerokość placu [m]', min: 8, max: 22, v: 14 },
-      { k: 'hill', l: 'wysokość wzgórza [m]', min: 0, max: 6, step: 0.5, v: 3 },
+    opts: [
+      {
+        k: 'set',
+        l: 'Zadanie',
+        choices: Object.keys(EW).map((k) => [k, EW[k].name]),
+        v: 'L5Z1',
+        rebuildFrame: true,
+      },
     ],
+    params: [
+      { k: 'dH', l: 'zmiana cech projektu [m]', min: -1.5, max: 1.5, step: 0.25, v: 0 },
+      { k: 'kw', l: 'mnożnik modułu wykopu', min: 0.5, max: 2, step: 0.1, v: 1 },
+      { k: 'kn', l: 'mnożnik modułu nasypu', min: 0.5, max: 2, step: 0.1, v: 1 },
+    ],
+    measureInfo,
+    mistakes: [],
     special: {
-      note: '<b>Model terenu 3D + mapa.</b> Najedź na mapę: kropla popłynie po terenie i skarpach – zobacz, że linia spadku jest zawsze ⟂ warstwic. Animowane krople pokazują spływ po nasypie i do wykopu.',
+      note: '<b>Model terenu 3D + mapa.</b> Najedź na mapę: kropla popłynie po terenie i skarpach. Suwak „przewyższenie” nad widokiem 3D podnosi rzeźbę terenu (rysunek 2D się nie zmienia).',
       ui: [
         { type: 'check', k: 'drops', l: 'animowane krople w 3D', v: true },
         { type: 'check', k: 'orig', l: 'pokaż pierwotny teren (półprzezroczysty)', v: false },
@@ -911,53 +1419,43 @@
         const F = c.k >= d.finalStep ? d.F : d.T;
         const r = flowOverlay(c, F, d.box, c.S.cursor) || { p2: [], p3: [] };
         if (c.S.drops && c.k >= d.finalStep) r.p3.push(d._drops || (d._drops = dropsPrim(d.F, d.box, 120)));
-        if (c.S.orig && c.k >= d.finalStep) r.p3.push(surfPrim('orig', (x, y) => d.T(x, y) + 0.02, d.box, 60, 45, () => '#6aa84f', 0.35));
+        if (c.S.orig && c.k >= d.finalStep) r.p3.push(surfPrim('orig', (x, y) => d.T(x, y) + 0.02, d.box, 80, 60, () => '#6aa84f', 0.35));
         return { p2: r.p2, p3: r.p3, info: { flow: 'Droga spływu wody – linia największego spadku (⟂ warstwic)' } };
       },
     },
     algo:
-      '<ol><li><b>Linia zerowa</b>: na brzegach placu szukamy punktów, gdzie teren ma cechę placu H (interpolacja między warstwicami). Dzieli ona plac na część w <b>nasypie</b> (teren niżej) i w <b>wykopie</b> (teren wyżej).</li>' +
-      '<li><b>Skarpy</b>: od każdego brzegu placu zakładamy płaszczyznę skarpy o pochyleniu 1:n (nasyp – w dół na zewnątrz) lub 1:m (wykop – w górę na zewnątrz). <b>Warstwice skarpy</b>: proste ∥ brzegu, w odstępach n (lub m) na każdy 1 m różnicy wysokości.</li>' +
-      '<li><b>Granica robót</b> (stopa nasypu / korona wykopu): punkty przecięcia warstwic skarpy z warstwicami terenu <u>o tej samej cesze</u>. Łączymy je płynną linią.</li>' +
-      '<li><b>Naroża</b>: sąsiednie skarpy przecinają się wzdłuż krawędzi przez narożnik placu – przy równych pochyleniach dwusieczna kąta zewnętrznego.</li>' +
-      '<li>Wynik: obszar nasypu (skarpy w dół) i wykopu (skarpy w górę); warstwice terenu wewnątrz robót zastąpione warstwicami skarp.</li></ol>',
+      '<ol><li><b>Linia zerowa</b>: na brzegach obiektu szukamy punktów, gdzie teren ma cechę projektu (interpolacja między warstwicami). Dzieli ona obiekt na część w <b>nasypie</b> (teren niżej) i w <b>wykopie</b> (teren wyżej).</li>' +
+      '<li><b>Skarpy przy krawędzi poziomej</b>: warstwice skarpy ∥ krawędzi w odstępach m<sub>n</sub> (nasyp, w dół) lub m<sub>w</sub> (wykop, w górę).</li>' +
+      '<li><b>Skarpy przy krawędzi pochyłej</b> (droga): z punktów krawędzi o cechach całkowitych zakreślamy okręgi (podstawy stożków o tworzących nachylonych jak skarpa): promień = m·Δh. Warstwica skarpy jest wspólną styczną okręgów o tej samej cesze.</li>' +
+      '<li><b>Granica robót</b>: punkty przecięcia warstwic skarpy i terenu o tej samej cesze, połączone płynną linią.</li>' +
+      '<li><b>Naroża</b>: krawędź dwóch sąsiednich skarp – przez przecięcia ich równocechowych warstwic.</li></ol>',
     build(p, B) {
-      const box = [0, 0, 80, 60];
-      const T = (x, y) => 3 + 0.085 * x + 0.04 * y + p.hill * Math.exp(-((x - 60) ** 2 + (y - 15) ** 2) / 300) - 2 * Math.exp(-((x - 20) ** 2 + (y - 45) ** 2) / 250);
-      const H = p.H,
-        nN = p.nN,
-        nW = p.nW;
-      const c = [40, 30];
-      const th = G.rad(p.rot);
-      const R = (q) => [c[0] + q[0] * Math.cos(th) - q[1] * Math.sin(th), c[1] + q[0] * Math.sin(th) + q[1] * Math.cos(th)];
-      const plat = [
-        [-p.pw / 2, -p.pl / 2],
-        [p.pw / 2, -p.pl / 2],
-        [p.pw / 2, p.pl / 2],
-        [-p.pw / 2, p.pl / 2],
-      ].map(R);
-      const ne = plat.length;
-      const area = G.polyArea2(plat);
-      const edges = plat.map((a, i) => {
-        const b = plat[(i + 1) % ne];
-        const d = V.norm(V.sub(b, a));
+      const cfg = EW[p.set] || EW.L5Z1;
+      const box = cfg.box;
+      const T = cfg.T || cfg._T || (cfg._T = contourTerrain(cfg.contours, box, 160, 160));
+      const dH = p.dH || 0;
+      const mw = cfg.mw * (p.kw || 1),
+        mn = cfg.mn * (p.kn || 1);
+      const out = cfg.outline.map((q) => [q[0], q[1], q[2] + dH]);
+      const poly = out.map(P2);
+      const area = G.polyArea2(poly);
+      const ne = out.length;
+      const edges = out.map((a, i) => {
+        const b = out[(i + 1) % ne];
+        const d = V.norm(V.sub(P2(b), P2(a)));
         let nout = V.perp2(d);
         if (area > 0) nout = V.mul(nout, -1);
-        return { a, b, d, nout };
+        return { a: P2(a), b: P2(b), ha: a[2], hb: b[2], d, L: V.dist(P2(a), P2(b)), nout, open: cfg.open ? cfg.open[i] : false, i };
       });
-      // sprawdzenie zwrotu normalnej
-      edges.forEach((e) => {
-        if (G.pointInPoly2(V.add(V.mid(e.a, e.b), V.mul(e.nout, 0.5)), plat)) e.nout = V.mul(e.nout, -1);
-      });
-      const dOut = (i, P) => V.dot(V.sub(P, edges[i].a), edges[i].nout);
-      const inside = (P) => G.pointInPoly2(P, plat);
-      const Sn = (x, y) => Math.min(...edges.map((e, i) => H - dOut(i, [x, y]) / nN));
-      const Sw = (x, y) => Math.max(...edges.map((e, i) => H + dOut(i, [x, y]) / nW));
-      const fN = (x, y) => (inside([x, y]) ? H - T(x, y) : Sn(x, y) - T(x, y));
-      const fW = (x, y) => (inside([x, y]) ? H - T(x, y) : Sw(x, y) - T(x, y));
+      const slopeE = edges.filter((e) => !e.open);
+      const inside = (P) => G.pointInPoly2(P, poly);
+      const hD = (x, y) => cfg.hD(x, y) + dH;
+      const Sn = (x, y) => Math.max(...slopeE.map((e) => edgeEnv(e, [x, y], mn, true)));
+      const Sw = (x, y) => Math.min(...slopeE.map((e) => edgeEnv(e, [x, y], mw, false)));
+      const inBox = (x, y) => x >= box[0] && x <= box[2] && y >= box[1] && y <= box[3];
       const F = (x, y) => {
-        if (x < box[0] || x > box[2] || y < box[1] || y > box[3]) return NaN;
-        if (inside([x, y])) return H;
+        if (!inBox(x, y)) return NaN;
+        if (inside([x, y])) return hD(x, y);
         const t = T(x, y);
         const sn = Sn(x, y);
         if (sn > t) return sn;
@@ -965,116 +1463,176 @@
         if (sw < t) return sw;
         return t;
       };
+      const fN = (x, y) => (inside([x, y]) ? hD(x, y) - T(x, y) : Sn(x, y) - T(x, y));
+      const fW = (x, y) => (inside([x, y]) ? hD(x, y) - T(x, y) : Sw(x, y) - T(x, y));
       B.data.F = F;
       B.data.T = T;
       B.data.box = box;
-      const NX = 160,
-        NY = 120;
+      const aspect = (box[3] - box[1]) / (box[2] - box[0]);
+      const NX = 150,
+        NY = Math.round(150 * aspect);
       const gT = G.grid(T, box[0], box[2], box[1], box[3], NX, NY);
       const tmin = Math.min(...gT.v.flat()),
         tmax = Math.max(...gT.v.flat());
       const lv = rangeInt(tmin, tmax);
-      const tc = (x, y, z) => (z < H ? lerpCol('#7fb069', '#c8d58a', (z - tmin) / (H - tmin + 1e-9)) : lerpCol('#c8d58a', '#b08850', (z - H) / (tmax - H + 1e-9)));
+      const hmin = Math.min(...out.map((q) => q[2])),
+        hmax = Math.max(...out.map((q) => q[2]));
+      const tc = (x, y, z) => lerpCol('#7fb069', '#b08850', (z - tmin) / (tmax - tmin + 1e-9));
+      const fmtH = (v) => f1(v).replace(',0', '');
       B.step({
-        title: 'Dane: teren (warstwice), plac o cesze H, pochylenia skarp',
-        co: 'Plac poziomy na wysokości <b>H = ' + f1(H) + ' m</b>; skarpy nasypu <b>1:' + f1(nN) + '</b>, wykopu <b>1:' + f1(nW) + '</b>. Teren opisany warstwicami co 1 m.',
-        jak: 'Obejrzyj model terenu w 3D (kolor wg wysokości). Najedź na warstwicę – podświetli się jej odpowiednik na modelu.',
-        why: 'Plac to płaszczyzna pozioma. Tam, gdzie teren jest niżej – trzeba go nasypać; gdzie wyżej – wykopać. Skarpy łagodzą przejście od placu do terenu.',
+        title: 'Dane: teren, obiekt z cechami, moduły skarp',
+        co: cfg.name.replace('📋 ', '') + '. Moduł wykopu <b>m<sub>w</sub> = ' + f1(mw) + ' ' + cfg.unit + '</b>, nasypu <b>m<sub>n</sub> = ' + f1(mn) + ' ' + cfg.unit + '</b> (odległość pozioma na 1 m różnicy wysokości).' + (cfg.note ? '<br><i>' + cfg.note + '</i>' : ''),
+        jak: 'Obejrzyj model terenu w 3D (przewyższenie dobrane automatycznie). Najedź na warstwicę – podświetli się jej odpowiednik na modelu.',
+        why: 'Obiekt (platforma, droga) to płaszczyzny o zadanych cechach. Tam, gdzie teren jest niżej – trzeba nasypać; gdzie wyżej – wykopać. Skarpy łagodzą przejście.',
         cam: { dir: [0.5, 0.9, 0.8] },
       });
-      B.a3(surfPrim('terrain0', T, box, 80, 60, tc, 1));
+      B.a3(surfPrim('terrain0', T, box, 90, Math.round(90 * aspect), tc, 1));
       B.info('terrain0', 'Model terenu (powierzchnia topograficzna)');
       lv.forEach((k) => {
-        const lines = G.isoline(gT, k);
-        lines.forEach((ln, j) => {
+        G.isoline(gT, k).forEach((ln, j) => {
           const id = 'tw' + k;
           B.a2({ t: 'pl', id, pts: ln, s: k % 5 === 0 ? 'contb' : 'cont' });
-          B.a3({ t: 'pl', id, pts: ln.map((q) => [q[0], q[1], k + 0.04]), s: 'cont', w: 0.6 });
-          if (j === 0) contourLabel(B, id, ln, k, 0.15);
+          B.a3({ t: 'pl', id, pts: ln.map((q) => [q[0], q[1], k + 0.02]), s: 'cont', w: 0.6 });
+          if (j === 0) contourLabel(B, id, ln, k, 0.08);
         });
         B.info('tw' + k, 'Warstwica terenu o cesze ' + k + ' m');
       });
-      B.a2({ t: 'pl', id: 'plat', pts: plat, closed: true, s: 'vis' });
-      B.a3({ t: 'poly', id: 'plat', pts: plat.map((q) => [q[0], q[1], H]), col: '#9e9e9e', op: 0.85, edge: true });
-      B.a2({ t: 'text', id: 'plat', p: c, txt: '(' + f1(H) + ')', s: 'resT' });
-      B.info('plat', 'Plac poziomy – cecha ' + f1(H) + ' m');
+      (cfg.spots || []).forEach((q, i) => {
+        B.a2({ t: 'text', id: 'spot' + i, p: P2(q), txt: '+' + q[2], s: 'hval' });
+        B.info('spot' + i, 'Punkt wysokościowy terenu +' + q[2]);
+      });
+      [
+        ['m_w', mw, 0],
+        ['m_n', mn, 1],
+      ].forEach(([n, m, j]) => {
+        const y = box[3] - 3 - j * 4.5;
+        B.a2({ t: 'seg', id: 'mod', a: [box[0] + 3, y], b: [box[0] + 3 + m, y], s: 'vis' });
+        B.a2({ t: 'seg', id: 'mod', a: [box[0] + 3, y - 0.8], b: [box[0] + 3, y + 0.8], s: 'given' });
+        B.a2({ t: 'seg', id: 'mod', a: [box[0] + 3 + m, y - 0.8], b: [box[0] + 3 + m, y + 0.8], s: 'given' });
+        B.a2({ t: 'text', id: 'mod', p: [box[0] + 3 + m + 3, y], txt: n, s: 'note', anchor: 'start' });
+      });
+      B.info('mod', 'Moduły skarp: m<sub>w</sub> = ' + f1(mw) + ', m<sub>n</sub> = ' + f1(mn) + ' (' + cfg.unit + ' na 1 m)');
+      B.a2({ t: 'pl', id: 'obj', pts: poly, closed: true, s: 'vis' });
+      B.a3({ t: 'pl', id: 'obj', pts: out.map((q) => [q[0], q[1], q[2] + 0.03]), closed: true, s: 'given' });
+      out.forEach((q, i) => {
+        const prev = out[(i - 1 + ne) % ne],
+          nxt = out[(i + 1) % ne];
+        if (Math.abs(prev[2] - q[2]) < 1e-9 && Math.abs(nxt[2] - q[2]) < 1e-9 && i % 2) return;
+        B.a2({ t: 'text', id: 'objc', p: V.add(P2(q), V.mul(V.norm(V.add(edges[i].nout, edges[(i - 1 + ne) % ne].nout)), -2.4)), txt: '(' + fmtH(q[2]) + ')', s: 'hval' });
+      });
+      B.info('obj', 'Obrys obiektu (platforma / droga) – krawędzie z cechami');
+      B.info('objc', 'Cecha wierzchołka obiektu');
+      // model 3D obiektu
+      const designPrim = {
+        t: 'mesh',
+        id: 'obj3',
+        build(THREE) {
+          const tris = THREE.ShapeUtils.triangulateShape(
+            poly.map((q) => new THREE.Vector2(q[0], q[1])),
+            []
+          );
+          const pos = [];
+          tris.forEach((t) => t.forEach((i) => pos.push(out[i][0], hD(out[i][0], out[i][1]) + 0.02, out[i][1])));
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+          g.computeVertexNormals();
+          return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: 0x9e9e9e, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
+        },
+      };
+      B.a3(designPrim);
+      B.info('obj3', 'Obiekt projektowany (szary)');
       // linia zerowa
-      const gN = G.grid(fN, box[0], box[2], box[1], box[3], NX, NY);
       const zeroPts = [];
-      edges.forEach((e, i) => {
+      edges.forEach((e) => {
         const N = 200;
         for (let k = 0; k < N; k++) {
           const P = V.lerp(e.a, e.b, k / N),
             Q = V.lerp(e.a, e.b, (k + 1) / N);
-          const a = T(P[0], P[1]) - H,
-            b = T(Q[0], Q[1]) - H;
+          const a = T(P[0], P[1]) - (e.ha + ((e.hb - e.ha) * k) / N),
+            b = T(Q[0], Q[1]) - (e.ha + ((e.hb - e.ha) * (k + 1)) / N);
           if (a < 0 !== b < 0) zeroPts.push(V.lerp(P, Q, a / (a - b)));
         }
       });
+      const gN = G.grid(fN, box[0], box[2], box[1], box[3], NX, NY);
       B.step({
         title: 'Linia zerowa – podział na nasyp i wykop',
-        co: zeroPts.length ? 'Na brzegach placu punkty <b>Z</b>, w których teren ma cechę ' + f1(H) + ' (' + zeroPts.length + ' pkt). Linia zerowa dzieli plac na część w nasypie i w wykopie.' : 'Teren ma wszędzie na brzegach ' + (T(c[0], c[1]) > H ? 'cechę większą od H – cały plac w wykopie.' : 'cechę mniejszą od H – cały plac w nasypie.'),
-        jak: 'Na brzegu placu interpolujemy cechy terenu między sąsiednimi warstwicami (jak stopniowanie odcinka) i szukamy cechy H. Wewnątrz placu linia zerowa to „warstwica H” terenu.',
-        why: 'Tam, gdzie teren = H, nie trzeba ani nasypywać, ani kopać – to granica dwóch rodzajów robót. Po jednej stronie skarpy idą w dół (nasyp), po drugiej w górę (wykop).',
+        co: zeroPts.length ? 'Na brzegach obiektu punkty <b>Z</b>, w których teren ma cechę projektu (' + zeroPts.length + ' pkt). Linia zerowa dzieli obiekt na część w nasypie i w wykopie.' : 'Teren ma wszędzie na brzegach ' + (T(poly[0][0], poly[0][1]) > out[0][2] ? 'cechę większą – cały obiekt w wykopie.' : 'cechę mniejszą – cały obiekt w nasypie.'),
+        jak: 'Wzdłuż krawędzi porównujemy cechę terenu (interpolacja między warstwicami) z cechą krawędzi (na drodze – zmienną!). Wewnątrz obiektu linia zerowa to miejsca, gdzie teren = projekt.',
+        why: 'Tam, gdzie teren = projekt, nie trzeba ani nasypywać, ani kopać – to granica dwóch rodzajów robót.',
       });
       zeroPts.forEach((q, i) => {
         B.a2({ t: 'pt', id: 'Z' + i, p: q, s: 'res2', label: 'Z_' + (i + 1) });
-        B.a3({ t: 'pt', id: 'Z' + i, p: [q[0], q[1], H], s: 'res2', label: 'Z_' + (i + 1) });
-        B.info('Z' + i, 'Punkt zerowy: teren ma tu cechę placu ' + f1(H));
+        B.a3({ t: 'pt', id: 'Z' + i, p: [q[0], q[1], T(q[0], q[1])], s: 'res2', label: 'Z_' + (i + 1) });
+        B.info('Z' + i, 'Punkt zerowy: teren ma tu cechę projektu');
       });
       G.isoline(gN, 0).forEach((ln) => {
         const inPart = ln.filter((q) => inside(q));
-        if (inPart.length > 1) {
-          B.a2({ t: 'pl', id: 'zero', pts: inPart, s: 'res2', w: 1.2 });
-        }
+        if (inPart.length > 1) B.a2({ t: 'pl', id: 'zero', pts: inPart, s: 'res2', w: 1.2 });
       });
-      B.info('zero', 'Linia zerowa (teren = H) – granica nasypu i wykopu na placu');
-      // skarpy – warstwice (pełne pasy)
-      const nearestEdgePt = (P) => {
+      B.info('zero', 'Linia zerowa (teren = projekt)');
+      // strefy i warstwice skarp
+      const nearestOutline = (P) => {
         let best = null,
           bd = 1e9;
         edges.forEach((e) => {
-          const L = V.dist(e.a, e.b);
-          const t = Math.max(0, Math.min(L, V.dot(V.sub(P, e.a), e.d)));
+          const t = Math.max(0, Math.min(e.L, V.dot(V.sub(P, e.a), e.d)));
           const Q = V.add(e.a, V.mul(e.d, t));
-          const d = V.dist(P, Q);
-          if (d < bd) {
-            bd = d;
-            best = Q;
+          const dd = V.dist(P, Q);
+          if (dd < bd) {
+            bd = dd;
+            best = { Q, h: e.ha + ((e.hb - e.ha) * t) / e.L, open: e.open };
           }
         });
         return best;
       };
       const zoneN = (x, y) => {
-        const Q = nearestEdgePt([x, y]);
-        return T(Q[0], Q[1]) < H;
+        const r = nearestOutline([x, y]);
+        return T(r.Q[0], r.Q[1]) < r.h;
       };
-      const SnMask = (x, y) => (inside([x, y]) || !zoneN(x, y) || Sn(x, y) < tmin - 1 ? NaN : Sn(x, y));
-      const SwMask = (x, y) => (inside([x, y]) || zoneN(x, y) || Sw(x, y) > tmax + 1 ? NaN : Sw(x, y));
+      const SnMask = (x, y) => (inside([x, y]) || !zoneN(x, y) ? NaN : Sn(x, y));
+      const SwMask = (x, y) => (inside([x, y]) || zoneN(x, y) ? NaN : Sw(x, y));
       const gSn = G.grid(SnMask, box[0], box[2], box[1], box[3], NX, NY);
       const gSw = G.grid(SwMask, box[0], box[2], box[1], box[3], NX, NY);
+      const hasSloped = slopeE.some((e) => Math.abs(e.hb - e.ha) > 1e-6);
       B.step({
         title: 'Warstwice skarp nasypu i wykopu',
-        co: 'Od brzegów placu rysujemy warstwice skarp: nasyp – co <b>' + f1(nN) + ' m</b> na każdy 1 m w dół; wykop – co <b>' + f1(nW) + ' m</b> na każdy 1 m w górę.',
-        jak: 'Warstwica skarpy o cesze k: prosta ∥ brzegu placu, odsunięta na zewnątrz o |H − k|·n (nasyp) lub |k − H|·m (wykop). Pierwsza warstwica całkowita leży w odległości ułamkowej (H nie jest całkowite!). Na narożach warstwice sąsiednich skarp spotykają się na krawędzi skarp.',
-        why: 'Pochylenie 1:n oznacza: 1 m różnicy wysokości na n m w poziomie, czyli interwał skarpy = n. Skarpa to płaszczyzna przez brzeg placu – jej warstwice są równoległe do brzegu.',
+        co: 'Od krawędzi obiektu rysujemy warstwice skarp: nasyp co <b>' + f1(mn) + '</b>, wykop co <b>' + f1(mw) + '</b> na każdy 1 m.' + (hasSloped ? ' Przy krawędziach pochyłych (droga) – <b>metodą stożków</b> (niebieskie okręgi).' : ''),
+        jak: 'Krawędź pozioma o cesze H: warstwica skarpy o cesze k jest ∥ krawędzi w odległości |H − k|·m. ' + (hasSloped ? 'Krawędź pochyła: w punkcie krawędzi o cesze c zakreślamy okrąg o promieniu |c − k|·m; warstwica k skarpy to styczna do takich okręgów (obwiednia stożków).' : '') + ' Na narożach warstwice sąsiednich skarp spotykają się na krawędzi skarp.',
+        why: 'Skarpa ma stałe nachylenie 1 : m – odległość pozioma na 1 m różnicy wysokości to moduł. Przy krawędzi pochyłej powierzchnia o stałym nachyleniu to obwiednia stożków o wierzchołkach na krawędzi.',
       });
       const slopeLines = (g, levels, pre, st) =>
         levels.forEach((k) => {
           G.isoline(g, k).forEach((ln) => {
             B.a2({ t: 'pl', id: pre + k, pts: ln, s: st, w: 1 });
-            B.a3({ t: 'pl', id: pre + k, pts: ln.map((q) => [q[0], q[1], k + 0.05]), s: st, w: 0.7 });
+            B.a3({ t: 'pl', id: pre + k, pts: ln.map((q) => [q[0], q[1], k + 0.04]), s: st, w: 0.7 });
           });
-          B.info(pre + k, (pre === 'sn' ? 'Warstwica skarpy nasypu' : 'Warstwica skarpy wykopu') + ' o cesze ' + k + ' m', ['tw' + k]);
+          B.info(pre + k, (pre.indexOf('sn') === 0 ? 'Warstwica skarpy nasypu' : 'Warstwica skarpy wykopu') + ' o cesze ' + k + ' m', ['tw' + k]);
         });
-      const lvN = rangeInt(tmin, H - 1e-6).filter((k) => k < H);
-      const lvW = rangeInt(H + 1e-6, tmax).filter((k) => k > H);
+      const lvN = rangeInt(tmin, hmax).filter((k) => k < hmax - 1e-6);
+      const lvW = rangeInt(hmin, tmax).filter((k) => k > hmin + 1e-6);
       slopeLines(gSn, lvN, 'sn', 'aux');
       slopeLines(gSw, lvW, 'sw', 'aux2');
-      // punkty przecięcia równocechowych
-      const gFN = gN; // fN zero-contour = granica nasypu
+      // stożki na krawędziach pochyłych
+      if (hasSloped)
+        slopeE.forEach((e) => {
+          if (Math.abs(e.hb - e.ha) < 1e-6) return;
+          rangeInt(Math.min(e.ha, e.hb), Math.max(e.ha, e.hb)).forEach((c) => {
+            const t = (c - e.ha) / (e.hb - e.ha);
+            if (t < 0 || t > 1) return;
+            const Pc = V.lerp(e.a, e.b, t);
+            const fill = zoneN(...V.add(Pc, V.mul(e.nout, 0.5)));
+            const m = fill ? mn : mw;
+            [1, 2].forEach((dk) => {
+              const id = 'cone' + e.i + '_' + c + '_' + dk;
+              B.a2({ t: 'arc', id, c: Pc, r: dk * m, a0: Math.atan2(e.nout[1], e.nout[0]) - 1.4, a1: Math.atan2(e.nout[1], e.nout[0]) + 1.4, s: fill ? 'aux' : 'aux2', w: 0.6 });
+              B.info(id, 'Stożek skarpy: wierzchołek w punkcie krawędzi o cesze ' + c + ', okrąg o promieniu ' + dk + '·m = ' + f1(dk * m) + ' → poziom ' + (fill ? c - dk : c + dk));
+            });
+            B.a2({ t: 'pt', id: 'conep' + e.i + '_' + c, p: Pc, s: 'aux', r: 1.8, label: '(' + c + ')', labCls: 'small' });
+          });
+        });
+      // punkty granicy
       const gW = G.grid(fW, box[0], box[2], box[1], box[3], NX, NY);
-      const bN = G.isoline(gFN, 0).map((ln) => ln.filter((q) => !inside(q))).filter((l) => l.length > 1);
+      const bN = G.isoline(gN, 0).map((ln) => ln.filter((q) => !inside(q))).filter((l) => l.length > 1);
       const bW = G.isoline(gW, 0).map((ln) => ln.filter((q) => !inside(q))).filter((l) => l.length > 1);
       const crossPts = (lines, levels) => {
         const r = [];
@@ -1093,72 +1651,102 @@
         cW = crossPts(bW, lvW);
       B.step({
         title: 'Punkty granicy: warstwica skarpy ∩ warstwica terenu o tej samej cesze',
-        co: 'Zaznaczamy punkty, w których warstwica skarpy przecina warstwicę terenu <b>o tej samej cesze</b>: ' + cN.length + ' pkt dla nasypu, ' + cW.length + ' pkt dla wykopu.',
+        co: 'Punkty, w których warstwica skarpy przecina warstwicę terenu <b>o tej samej cesze</b>: ' + cN.length + ' dla nasypu, ' + cW.length + ' dla wykopu.',
         jak: 'Dla każdej cechy k: warstwica skarpy k ∩ warstwica terenu k. Najedź na punkt – podświetlą się obie warstwice.',
-        why: 'W takim punkcie skarpa i teren mają tę samą wysokość – powierzchnia skarpy „wychodzi” na teren. To dokładnie metoda przecinania dwóch powierzchni warstwicami (jak przecięcie płaszczyzn w 5.2).',
+        why: 'W takim punkcie skarpa i teren mają tę samą wysokość – skarpa „wychodzi” na teren.',
       });
       cN.concat(cW).forEach((q, i) => {
         const isN = i < cN.length;
         const id = 'cp' + i;
         B.a2({ t: 'pt', id, p: q.p, s: isN ? 'aux' : 'aux2', r: 2.6 });
         B.a3({ t: 'pt', id, p: [q.p[0], q.p[1], q.k], s: isN ? 'aux' : 'aux2', small: true });
-        B.info(id, 'Punkt granicy robót o cesze ' + q.k + ': warstwica skarpy ' + (isN ? 'nasypu' : 'wykopu') + ' ∩ warstwica terenu', [(isN ? 'sn' : 'sw') + q.k, 'tw' + q.k]);
+        B.info(id, 'Punkt granicy robót o cesze ' + q.k, [(isN ? 'sn' : 'sw') + q.k, 'tw' + q.k]);
       });
       B.step({
-        title: 'Granice robót: stopa nasypu i korona wykopu',
-        co: 'Łączymy punkty płynną linią: <b>granica nasypu</b> (stopa skarpy) i <b>granica wykopu</b> (górna krawędź skarpy).',
-        jak: 'Linia przechodzi przez punkty w kolejności; między nimi prowadzimy ją zgodnie z przebiegiem warstwic (interpolacja). Na narożach granica załamuje się na krawędzi skarp.',
-        why: 'Granica robót = krzywa przecięcia powierzchni skarp z powierzchnią terenu. Poza nią teren pozostaje nienaruszony.',
+        title: 'Granice robót i krawędzie skarp na narożach',
+        co: 'Łączymy punkty: <b>granica nasypu</b> (stopa skarpy, czerwona) i <b>granica wykopu</b> (korona skarpy, fioletowa). Z naroży obiektu prowadzimy krawędzie skarp.',
+        jak: 'Krawędź dwóch skarp przechodzi przez narożnik obiektu i przez punkty przecięcia równocechowych warstwic obu skarp (przy równych modułach i krawędziach poziomych – dwusieczna).',
+        why: 'Granica robót = krzywa przecięcia skarp z terenem. Krawędź skarp = przecięcie dwóch powierzchni skarp.',
       });
-      bN.forEach((ln, i) => {
+      bN.forEach((ln) => {
         B.a2({ t: 'pl', id: 'bN', pts: ln, s: 'res', w: 2.4 });
-        B.a3({ t: 'pl', id: 'bN', pts: ln.map((q) => [q[0], q[1], T(q[0], q[1]) + 0.08]), s: 'res' });
+        B.a3({ t: 'pl', id: 'bN', pts: ln.map((q) => [q[0], q[1], T(q[0], q[1]) + 0.05]), s: 'res' });
       });
       bW.forEach((ln) => {
         B.a2({ t: 'pl', id: 'bW', pts: ln, s: 'res2', w: 2.4 });
-        B.a3({ t: 'pl', id: 'bW', pts: ln.map((q) => [q[0], q[1], T(q[0], q[1]) + 0.08]), s: 'res2' });
+        B.a3({ t: 'pl', id: 'bW', pts: ln.map((q) => [q[0], q[1], T(q[0], q[1]) + 0.05]), s: 'res2' });
       });
       B.info('bN', 'Granica nasypu (stopa skarpy nasypu)');
-      B.info('bW', 'Granica wykopu (górna krawędź skarpy wykopu)');
-      // naroża
-      const corners = [];
-      plat.forEach((q, i) => {
+      B.info('bW', 'Granica wykopu (korona skarpy wykopu)');
+      // naroża: śledzenie krzywej f1 = f2 od wierzchołka
+      out.forEach((q, i) => {
         const e1 = edges[(i - 1 + ne) % ne],
           e2 = edges[i];
-        const isN = T(q[0], q[1]) < H;
-        const dir = V.norm(V.add(e1.nout, e2.nout));
-        const f = isN ? fN : fW;
-        let L = 0;
-        for (let s = 0.2; s < 60; s += 0.2) {
-          const P = V.add(q, V.mul(dir, s));
-          const v = f(P[0], P[1]);
-          if ((isN && v <= 0) || (!isN && v >= 0)) break;
-          L = s;
+        if (e1.open || e2.open) return;
+        const v = P2(q);
+        const T0 = T(v[0], v[1]);
+        const fill = T0 < q[2];
+        const m = fill ? mn : mw;
+        const f = (P, e) => edgeEnv(e, P, m, fill);
+        let dir = V.norm(V.add(e1.nout, e2.nout));
+        const crossz = V.cross2(e1.d, e2.d);
+        const reflex = area > 0 ? crossz < 0 : crossz > 0;
+        void reflex;
+        const pts = [v];
+        let cur = v;
+        for (let s = 0.25; s < 200; s += 0.25) {
+          const base = Math.atan2(dir[1], dir[0]);
+          let lo = base - 0.9,
+            hi = base + 0.9;
+          const g = (a) => {
+            const P = V.add(cur, [0.25 * Math.cos(a), 0.25 * Math.sin(a)]);
+            return f(P, e1) - f(P, e2);
+          };
+          let glo = g(lo),
+            ghi = g(hi);
+          if (glo * ghi > 0) break;
+          for (let it = 0; it < 30; it++) {
+            const mid = (lo + hi) / 2,
+              gm = g(mid);
+            if (gm * glo <= 0) {
+              hi = mid;
+              ghi = gm;
+            } else {
+              lo = mid;
+              glo = gm;
+            }
+          }
+          const a = (lo + hi) / 2;
+          const P = V.add(cur, [0.25 * Math.cos(a), 0.25 * Math.sin(a)]);
+          if (!inBox(P[0], P[1]) || inside(P)) break;
+          const hs = f(P, e1);
+          const ht = T(P[0], P[1]);
+          if ((fill && hs <= ht) || (!fill && hs >= ht)) {
+            pts.push(P);
+            break;
+          }
+          if (Math.max(...slopeE.map((e) => (e === e1 || e === e2 ? -1e9 : fill ? edgeEnv(e, P, m, true) : -edgeEnv(e, P, m, false)))) > (fill ? hs : -hs) + 1e-6) break;
+          pts.push(P);
+          dir = V.norm(V.sub(P, cur));
+          cur = P;
         }
-        if (L > 0.3) corners.push({ a: q, b: V.add(q, V.mul(dir, L)), isN });
-      });
-      B.step({
-        title: 'Krawędzie skarp na narożach',
-        co: 'Z narożników placu prowadzimy krawędzie przecięcia sąsiednich skarp – do granicy robót.',
-        jak: 'Przy równych pochyleniach sąsiednich skarp krawędź jest dwusieczną kąta zewnętrznego naroża (tu: przekątna 45° dla prostokątnego placu). Kontrola: przechodzi przez przecięcia równocechowych warstwic obu skarp.',
-        why: 'Dwie płaszczyzny skarp przecinają się wzdłuż prostej przez wspólny punkt (naroże placu); punkty jednakowo odległe od obu brzegów mają jednakową wysokość na obu skarpach.',
-      });
-      corners.forEach((q, i) => {
-        B.a2({ t: 'seg', id: 'cor' + i, a: q.a, b: q.b, s: q.isN ? 'aux' : 'aux2', w: 1.6 });
-        B.a3({ t: 'seg', id: 'cor' + i, a: [q.a[0], q.a[1], H], b: [q.b[0], q.b[1], F(q.b[0], q.b[1])], s: q.isN ? 'aux' : 'aux2' });
-        B.info('cor' + i, 'Krawędź skarp ' + (q.isN ? 'nasypu' : 'wykopu') + ' na narożu placu');
+        if (pts.length > 2) {
+          B.a2({ t: 'pl', id: 'cor' + i, pts, s: fill ? 'aux' : 'aux2', w: 1.6 });
+          B.a3({ t: 'pl', id: 'cor' + i, pts: pts.map((P) => [P[0], P[1], F(P[0], P[1]) + 0.05]), s: fill ? 'aux' : 'aux2' });
+          B.info('cor' + i, 'Krawędź skarp ' + (fill ? 'nasypu' : 'wykopu') + ' na narożu obiektu');
+        }
       });
       // wynik
       B.step({
         title: 'Wynik: plan robót ziemnych i model 3D',
-        co: 'Teren po wykonaniu robót: plac, skarpy nasypu (niebieskie warstwice) i wykopu (zielone). Warstwice skarp ograniczone do obszaru robót.',
-        jak: 'Włącz „pierwotny teren” w Widoku specjalnym, aby porównać. Najedź na mapę – kropla pokaże spływ po skarpach.',
-        why: 'Zmień cechę placu H – zobacz, jak przesuwa się linia zerowa i jak zmienia się proporcja nasyp/wykop. Zmień pochylenia – im łagodniejsza skarpa (większe n), tym szerszy pas robót.',
+        co: 'Teren po wykonaniu robót: obiekt, skarpy nasypu (niebieskie warstwice) i wykopu (zielone), ograniczone do obszaru robót.',
+        jak: 'Włącz „pierwotny teren” w Widoku specjalnym, aby porównać. Miarką (📏) zmierzysz spadek skarpy.',
+        why: 'Zmień cechy projektu lub moduły – zobacz, jak przesuwa się linia zerowa i jak zmienia się szerokość pasa robót.',
         cam: { dir: [0.55, 0.85, 0.75] },
       });
       B.data.finalStep = B.cur;
       B.end('terrain0');
-      B.endWhere((q) => /^s[nw]\d/.test(q.id) || /^cp\d/.test(q.id));
+      B.endWhere((q) => /^s[nw]\d/.test(q.id) || /^cp\d/.test(q.id) || /^cone/.test(q.id));
       const fc = (x, y, z) => {
         if (inside([x, y])) return '#9e9e9e';
         const t = T(x, y);
@@ -1166,14 +1754,13 @@
         if (z < t - 0.01) return '#e6d27a';
         return tc(x, y, z);
       };
-      B.a3(surfPrim('terrain', F, box, 160, 120, fc, 1));
-      B.info('terrain', 'Teren po robotach: brązowy – nasyp, żółty – wykop, szary – plac');
+      B.a3(surfPrim('terrain', F, box, 180, Math.round(180 * aspect), fc, 1));
+      B.info('terrain', 'Teren po robotach: brązowy – nasyp, żółty – wykop, szary – obiekt');
       const gSnF = G.grid((x, y) => (!inside([x, y]) && fN(x, y) > 0 ? Sn(x, y) : NaN), box[0], box[2], box[1], box[3], NX, NY);
       const gSwF = G.grid((x, y) => (!inside([x, y]) && fW(x, y) < 0 ? Sw(x, y) : NaN), box[0], box[2], box[1], box[3], NX, NY);
       slopeLines(gSnF, lvN, 'snF', 'aux');
       slopeLines(gSwF, lvW, 'swF', 'aux2');
-      // wypełnienia obszarów robót w 2D (przybliżone komórkami)
-      B.a3({ t: 'pl', id: 'plat', pts: plat.map((q) => [q[0], q[1], H + 0.05]), closed: true, s: 'given' });
+      B.data.ok = true;
     },
   });
 })();

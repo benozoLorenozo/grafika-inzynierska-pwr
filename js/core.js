@@ -178,6 +178,13 @@
         a.ext.u0 = b.ext.u0 = u0;
         a.ext.u1 = b.ext.u1 = u1;
       }
+      const c = this.P.p3;
+      if (c && b && c.parent === 'p2') {
+        c.ext.u0 = 0;
+        c.ext.u1 = b.ext.v1;
+        c.ext.v0 = 0;
+        if (a) c.ext.v1 = a.ext.v1;
+      }
     }
     quad(id) {
       const pl = this.P[id],
@@ -266,10 +273,14 @@
       this.planeFrom[id] = this.cur;
       return pl;
     }
+    /* rzutnie podstawowe obecne w układzie (π1, π2 i ewentualnie π3) */
+    get base() {
+      return GW.mplanes(this.sys);
+    }
     /* punkt w przestrzeni + rzuty; opts: {on:['p1','p2'], s, ray, odn, lab, space, pre} */
     mPoint(name, P, o = {}) {
       const sys = this.sys;
-      const on = o.on || ['p1', 'p2'];
+      const on = o.on || this.base;
       const s = o.s || 'given';
       const id0 = (o.pre || '') + name;
       const res = { P, sh: {}, id: id0 };
@@ -300,8 +311,31 @@
           if (!pl.parent || on.indexOf(pl.parent) < 0) return;
           this.odn(name, P, pl.parent, pid, { pre: o.pre });
         });
+        if (on.indexOf('p3') >= 0 && on.indexOf('p1') >= 0 && sys.P.p3 && sys.P.p3.parent === 'p2') this.odn13(name, P, { pre: o.pre });
       }
       return res;
+    }
+    /* odnosząca π1 ↔ π3 (przez prostą pod 45° albo łuk wokół O) */
+    odn13(name, P, o = {}) {
+      const sys = this.sys;
+      const p3 = sys.get('p3');
+      const ax = p3.s0[0];
+      const id = 'odn:' + (o.pre || '') + name + '|13';
+      const foot = [ax, P[1], 0];
+      this.a3({ t: 'seg', id, a: sys.proj3('p1', P), b: foot, pl: 'p1', s: 'odn' });
+      this.a3({ t: 'seg', id, a: sys.proj3('p3', P), b: foot, pl: 'p3', s: 'odn' });
+      const s1 = sys.toSheet('p1', P),
+        s3 = sys.toSheet('p3', P);
+      const y = P[1];
+      if (GW.view && GW.view.mitre === 'arc' && y > 1e-6) {
+        this.a2({ t: 'seg', id, a: s1, b: [ax, y], s: 'odn' });
+        this.a2({ t: 'arc', id, c: [ax, 0], r: y, a0: Math.PI / 2, a1: 0, s: 'odn' });
+        this.a2({ t: 'seg', id, a: [ax + y, 0], b: s3, s: 'odn' });
+      } else this.a2({ t: 'pl', id, pts: [s1, [ax + y, y], s3], s: 'odn' });
+      const nm = (o.pre || '') + name;
+      this.info(id, 'Linia odnosząca ' + GW.labHTML(GW.lab(name, 1)) + '–' + GW.labHTML(GW.lab(name, 3)) + ': odległość od π<sub>2</sub> (y = ' + G.f1(y) + ') przenosimy z rzutu poziomego do bocznego ' + (GW.view && GW.view.mitre === 'arc' ? 'łukiem o środku w O' : 'przez prostą pod 45°'));
+      this.link(id, [nm + '|1', nm + '|3']);
+      return id;
     }
     /* linia odnosząca rzutów punktu na rzutniach pa – pb (pb dzieckiem pa lub odwrotnie) */
     odn(name, P, pa, pb, o = {}) {
@@ -369,7 +403,7 @@
     /* odcinek w przestrzeni + jego rzuty (bez widoczności) */
     mSeg(id, A, B, o = {}) {
       const sys = this.sys;
-      const on = o.on || ['p1', 'p2'];
+      const on = o.on || this.base;
       const s = o.s || 'given';
       if (o.space !== false) this.a3({ t: 'seg', id, a: A, b: B, s: o.s3 || s });
       on.forEach((pid) => {
@@ -386,7 +420,7 @@
     /* wielokąt (wypełniony) w przestrzeni + rzuty */
     mPoly(id, pts, o = {}) {
       const sys = this.sys;
-      const on = o.on || ['p1', 'p2'];
+      const on = o.on || this.base;
       this.a3({ t: 'poly', id, pts, col: o.col || '#e8c060', op: o.op ?? 0.45 });
       on.forEach((pid) => {
         const pl = sys.get(pid);
@@ -421,7 +455,7 @@
         const from = this.planeFrom[pl.id] || 0;
         const nm = 'π_' + pl.k;
         this.p3.push({ t: 'poly', id: 'plane:' + pl.id, pts: sys.quad(pl.id), pl: pl.id, col: pl.k === 1 ? '#7fa8d8' : pl.k === 2 ? '#9ec29a' : '#d8a07f', op: 0.13, edge: true, from, planeLabel: nm, isPlane: true });
-        this.infoMap['plane:' + pl.id] = 'Rzutnia π<sub>' + pl.k + '</sub>' + (pl.k === 1 ? ' (pozioma)' : pl.k === 2 ? ' (pionowa)' : ' – rzutnia dodatkowa (transformacja)');
+        this.infoMap['plane:' + pl.id] = 'Rzutnia π<sub>' + pl.k + '</sub>' + (pl.k === 1 ? ' (pozioma)' : pl.k === 2 ? ' (pionowa)' : pl.k === 3 ? ' (boczna / profilowa) – widok z lewej, rozkładana na prawo od π<sub>2</sub>' : ' – rzutnia dodatkowa (transformacja)');
         if (pl.parent) {
           const ax = sys.axisName(pl.id);
           const e = pl.ext;
@@ -443,6 +477,12 @@
           }
           this.infoMap[idx] = 'Oś rzutów ' + GW.labHTML(ax) + ' – krawędź przecięcia rzutni π<sub>' + Math.min(pl.k, sys.get(pl.parent).k) + '</sub> i π<sub>' + Math.max(pl.k, sys.get(pl.parent).k) + '</sub>';
           this.link(idx, ['plane:' + pl.id, 'plane:' + pl.parent]);
+          if (pl.id === 'p3' && pl.parent === 'p2' && !(GW.view && GW.view.mitre === 'arc')) {
+            const L = Math.max(20, (sys.P.p1 && sys.P.p1.ext ? sys.P.p1.ext.v1 : 60) + 6);
+            const O = pl.s0;
+            this.p2.push({ t: 'seg', id: 'mitre', a: O, b: [O[0] + L, O[1] + L], s: 'thin', from, noFit: true });
+            this.infoMap.mitre = 'Prosta pomocnicza pod 45° – przenosi odległości od π<sub>2</sub> (współrzędne y) z rzutu poziomego do bocznego';
+          }
         }
       });
       return this;
@@ -455,6 +495,53 @@
     const pl = sys.get(pid);
     const pieces = G.hlr(edges, faces, { dir: pl.N }, opts);
     return pieces.map((p) => ({ a3: p.a, b3: p.b, a: sys.toSheet(pid, p.a), b: sys.toSheet(pid, p.b), vis: p.st === 'vis', e: p.e }));
+  };
+
+  /* rzutnie podstawowe w układzie Monge'a (π1, π2, ewentualnie π3) */
+  GW.mplanes = (sys) => (sys ? ['p1', 'p2'].concat(sys.P.p3 && sys.P.p3.parent === 'p2' ? ['p3'] : []).filter((p) => sys.P[p]) : []);
+  GW.view = { p3: false, mitre: '45' };
+
+  /* ---------- kategorie prymitywów (filtry widoku) ---------- */
+  GW.catOf = (p) => {
+    if (p.isPlane) return 'planes';
+    if (p.t === 'mesh') return p.noPick && p.id !== 'hist' ? 'aux' : 'solids';
+    if (p.t === 'poly') return p.edge ? 'auxplanes' : 'solids';
+    if (p.t === 'pt') return 'pts';
+    if (p.t === 'text') return p.s === 'hval' ? 'cont' : p.s === 'axisnum' ? 'axes' : 'text';
+    if (p.t === 'hatch') return 'hatch';
+    const s = p.s || 'given';
+    if (s === 'ray') return 'rays';
+    if (s === 'odn') return 'odn';
+    if (s === 'axis') return 'axes';
+    if (s === 'res' || s === 'res2' || s === 'resT') return 'res';
+    if (s === 'resd') return 'res+hid';
+    if (s === 'hid' || s === 'hidv') return 'hid';
+    if (s === 'cont' || s === 'contb') return 'cont';
+    if (s === 'aux' || s === 'auxd' || s === 'aux2' || s === 'sec' || s === 'thin' || s === 'dist' || s === 'light' || s === 'lightl' || s === 'eye') return 'aux';
+    return 'given';
+  };
+  GW.FILTERS = [
+    ['given', 'Dane i krawędzie widoczne'],
+    ['hid', 'Linie niewidoczne (kreskowe)'],
+    ['res', 'Wynik (czerwony/fioletowy)'],
+    ['aux', 'Konstrukcja pomocnicza'],
+    ['pts', 'Punkty'],
+    ['labels', 'Etykiety (oznaczenia)'],
+    ['odn', 'Linie odnoszące'],
+    ['rays', 'Promienie rzutujące (3D)'],
+    ['axes', 'Osie rzutów'],
+    ['planes', 'Rzutnie'],
+    ['auxplanes', 'Płaszczyzny pomocnicze'],
+    ['solids', 'Bryły / powierzchnie / wypełnienia'],
+    ['cont', 'Warstwice i cechy'],
+    ['hatch', 'Kreskowanie przekrojów'],
+    ['text', 'Opisy tekstowe'],
+  ];
+  GW.passFilter = (p, F) => {
+    if (!F) return true;
+    const c = GW.catOf(p);
+    if (c === 'res+hid') return F.res !== false && F.hid !== false;
+    return F[c] !== false;
   };
 
   /* ---------- rejestr lekcji ---------- */

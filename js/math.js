@@ -659,6 +659,173 @@
     return loops;
   };
 
+  /* Krzywe, gdy na każdej tworzącej jest dokładnie jedno przecięcie (np. walec wchodzący
+     w stożek i kończący się w jego wnętrzu). rootsAt(u) => tablica s.  Zwraca pętle/łamane. */
+  G.curveLoops = (rootsAt, toPoint, N = 360) => {
+    const U = (k) => (2 * Math.PI * (k + 0.5)) / N;
+    const arr = [];
+    for (let k = 0; k < N; k++) arr.push(rootsAt(U(k)));
+    const cnt = arr.map((r) => r.length);
+    if (cnt.every((c) => c >= 2) || cnt.some((c) => c >= 2)) return G.pairedLoops((u) => rootsAt(u), toPoint, N);
+    if (cnt.every((c) => c === 1)) return [arr.map((r, k) => toPoint(U(k), r[0]))];
+    // łamane otwarte: przebiegi z jednym pierwiastkiem
+    const out = [];
+    let cur = null;
+    for (let k = 0; k < N; k++) {
+      if (cnt[k] === 1) {
+        if (!cur) out.push((cur = []));
+        cur.push(toPoint(U(k), arr[k][0]));
+      } else cur = null;
+    }
+    if (out.length > 1 && cnt[0] === 1 && cnt[N - 1] === 1) {
+      const last = out.pop();
+      out[0] = last.concat(out[0]);
+    }
+    return out.filter((l) => l.length > 2).map((l) => Object.assign(l, { open: true }));
+  };
+
+  /* ---------- prymitywy brył wypukłych ---------- */
+  G.box = (x0, x1, y0, y1, z0, z1) => {
+    const b = [
+      [x0, y0, z0],
+      [x1, y0, z0],
+      [x1, y1, z0],
+      [x0, y1, z0],
+    ];
+    return G.prism(b, [0, 0, z1 - z0]);
+  };
+  /* graniastosłup o profilu w płaszczyźnie (y,z) wyciągnięty wzdłuż x */
+  G.prismX = (prof, x0, x1) =>
+    G.prism(
+      prof.map((q) => [x0, q[0], q[1]]),
+      [x1 - x0, 0, 0]
+    );
+  /* profil w (x,z) wyciągnięty wzdłuż y */
+  G.prismY = (prof, y0, y1) =>
+    G.prism(
+      prof.map((q) => [q[0], y0, q[1]]),
+      [0, y1 - y0, 0]
+    );
+  /* podstawa w (x,y) wyciągnięta wzdłuż z */
+  G.prismZ = (base, z0, z1) =>
+    G.prism(
+      base.map((q) => [q[0], q[1], z0]),
+      [0, 0, z1 - z0]
+    );
+
+  /* =====================================================================
+     Bryła niewypukła jako suma brył wypukłych (np. schodki, wycięcia, otwory).
+     Krawędzie rzeczywiste wyznaczamy badając zajętość przestrzeni wokół
+     każdego kawałka krawędzi (krawędź = załamanie powierzchni sumy).
+     ===================================================================== */
+  G.Union = function (parts) {
+    this.parts = parts.filter((p) => p && p.faces.length >= 4 && p.verts.length >= 4);
+    const all = [].concat(...this.parts.map((p) => p.verts));
+    const bb = [0, 1, 2].map((i) => [Math.min(...all.map((q) => q[i])), Math.max(...all.map((q) => q[i]))]);
+    this.bb = bb;
+    this.size = Math.max(...bb.map((r) => r[1] - r[0])) || 1;
+  };
+  G.Union.prototype.contains = function (P, eps = 1e-9) {
+    return this.parts.some((p) => p.planes.every((pl) => G.sd(pl, P) <= eps));
+  };
+  G.Union.prototype.faces = function () {
+    const f = [];
+    this.parts.forEach((p) => p.faces.forEach((q, i) => f.push({ pts: q, pl: p.planes[i] })));
+    return f;
+  };
+  G.Union.prototype.clip = function (pl) {
+    return new G.Union(this.parts.map((p) => (p.verts.every((v) => G.sd(pl, v) <= 1e-9) ? p : p.verts.every((v) => G.sd(pl, v) >= -1e-9) ? null : p.clip(pl))));
+  };
+  G.Union.prototype.sections = function (pl) {
+    return this.parts.map((p) => p.section(pl)).filter((s) => s.length >= 3);
+  };
+  /* kawałki krawędzi będące załamaniami powierzchni sumy */
+  G.Union.prototype.creaseEdges = function () {
+    const r = this.size * 0.004;
+    const NS = 48;
+    const planes = [].concat(...this.parts.map((p) => p.planes));
+    const out = [];
+    const seen = new Set();
+    const key = (M) => M.map((v) => Math.round(v * 1e3)).join(',');
+    this.parts.forEach((part) =>
+      part.edges.forEach((e) => {
+        const d = V.sub(e.b, e.a);
+        const L = V.len(d);
+        if (L < 1e-9) return;
+        const u0 = V.mul(d, 1 / L);
+        const ts = [0, 1];
+        planes.forEach((pl) => {
+          const s = G.segPlane(e.a, e.b, pl);
+          if (s && s.t > 1e-7 && s.t < 1 - 1e-7) ts.push(s.t);
+        });
+        ts.sort((a, b) => a - b);
+        const ax = Math.abs(u0[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+        const u = V.norm(V.cross(u0, ax)),
+          w = V.cross(u0, u);
+        for (let i = 0; i + 1 < ts.length; i++) {
+          if (ts[i + 1] - ts[i] < 1e-7) continue;
+          const M = V.lerp(e.a, e.b, (ts[i] + ts[i + 1]) / 2);
+          const k = key(M) + '|' + key(u0.map((v) => Math.abs(v)));
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const occ = [];
+          for (let j = 0; j < NS; j++) {
+            const a = (2 * Math.PI * (j + 0.37)) / NS;
+            occ.push(this.contains(V.add(M, V.add(V.mul(u, r * Math.cos(a)), V.mul(w, r * Math.sin(a))))));
+          }
+          const n = occ.filter(Boolean).length;
+          if (n === 0 || n === NS) continue;
+          const tr = [];
+          for (let j = 0; j < NS; j++) if (occ[j] !== occ[(j + 1) % NS]) tr.push(j);
+          if (tr.length === 2 && Math.abs(Math.abs(tr[1] - tr[0]) - NS / 2) <= 0 && n === NS / 2) continue; // płaska ściana
+          out.push({ a: V.lerp(e.a, e.b, ts[i]), b: V.lerp(e.a, e.b, ts[i + 1]) });
+        }
+      })
+    );
+    return G.mergeCollinear(out);
+  };
+  /* scalanie współliniowych, stykających się odcinków */
+  G.mergeCollinear = (segs, tol = 1e-6) => {
+    const used = new Array(segs.length).fill(false);
+    const res = [];
+    for (let i = 0; i < segs.length; i++) {
+      if (used[i]) continue;
+      used[i] = true;
+      let a = segs[i].a,
+        b = segs[i].b;
+      const d = V.norm(V.sub(b, a));
+      let grown = true;
+      while (grown) {
+        grown = false;
+        for (let j = 0; j < segs.length; j++) {
+          if (used[j]) continue;
+          const s = segs[j];
+          const ds = V.norm(V.sub(s.b, s.a));
+          if (Math.abs(Math.abs(V.dot(ds, d)) - 1) > 1e-9) continue;
+          if (G.pointLineDist(s.a, a, d) > tol) continue;
+          const ends = [
+            [s.a, s.b],
+            [s.b, s.a],
+          ];
+          for (const [p, q] of ends) {
+            if (V.dist(p, b) < tol) {
+              b = q;
+              used[j] = grown = true;
+              break;
+            }
+            if (V.dist(p, a) < tol) {
+              a = q;
+              used[j] = grown = true;
+              break;
+            }
+          }
+        }
+      }
+      res.push({ a, b });
+    }
+    return res;
+  };
+
   /* ---------- obroty ---------- */
   G.rotMat = (axis, ang) => {
     const [x, y, z] = V.norm(axis);

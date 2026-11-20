@@ -28,10 +28,87 @@
     const verts = base.map((p, i) => ({ n: names[i], p })).concat(base.map((p, i) => ({ n: names2[i], p: V.add(p, shift) })));
     return { poly, verts };
   }
+  /* ---------- Lista 2: tabele wymiarów (odczytane ze skanu książki) ---------- */
+  // typ L: graniastosłup kwadratowy (przekątna a, wysokość h) obrócony o 45° + graniastosłup trójkątny ∥ x
+  const TL = [
+    [50, 40, 52, 18, 45, 35, 30, 5], [60, 30, 43, 10, 54, 34, 38, 10], [52, 50, 50, 10, 53, 38, 30, 30], [58, 30, 56, 18, 55, 40, 40, 16],
+    [62, 40, 54, 15, 50, 40, 38, 0], [56, 28, 48, 20, 50, 34, 32, 12], [50, 40, 46, 20, 48, 35, 20, 14], [54, 25, 52, 20, 68, 38, 32, 26],
+    [52, 42, 50, 15, 46, 36, 36, 8], [60, 34, 46, 0, 48, 35, 26, 15], [58, 28, 54, 15, 60, 40, 40, 14], [56, 38, 56, 12, 60, 40, 30, 13],
+    [54, 34, 44, 10, 42, 36, 40, 12], [52, 48, 46, 19, 48, 38, 36, 20], [55, 35, 48, 15, 46, 36, 40, 20], [54, 24, 50, 20, 68, 38, 32, 25],
+  ]; // h, h1, a, b, l, l1, e, k
+  // typ R: graniastosłup sześciokątny (d – po narożach, h) + graniastosłup trójkątny ∥ x
+  const TR = [
+    [56, 62, 48, 34, 40, 32, 74], [60, 60, 50, 40, 40, 30, 80], [54, 62, 45, 32, 40, 38, 80], [56, 60, 50, 36, 42, 55, 76],
+    [58, 62, 48, 36, 78, 28, 78], [52, 52, 60, 30, 38, 40, 74], [50, 50, 56, 38, 76, 18, 72], [60, 60, 50, 40, 42, 30, 80],
+    [58, 64, 46, 32, 36, 38, 76], [54, 65, 48, 34, 80, 28, 71], [56, 60, 50, 33, 36, 42, 68], [50, 58, 63, 38, 37, 40, 70],
+    [48, 54, 45, 32, 38, 38, 68], [56, 62, 43, 40, 64, 30, 64], [58, 64, 60, 36, 48, 40, 72], [56, 60, 42, 38, 62, 32, 62],
+  ]; // d, h, a, c, n, m, l
+  function typeL(r, sh) {
+    const [hh, h1, a, b, l, l1, e, k] = r;
+    const cx = 60,
+      cy = 45;
+    const base = [
+      [cx - a / 2, cy, 0],
+      [cx, cy + a / 2, 0],
+      [cx + a / 2, cy, 0],
+      [cx, cy - a / 2, 0],
+    ];
+    const s1 = mkPrism(base, [0, 0, hh], ['A', 'B', 'C', 'D'], ['A_1', 'B_1', 'C_1', 'D_1']);
+    s1.title = 'graniastosłup kwadratowy (a = ' + a + ', h = ' + hh + ')';
+    const gap = 2.5;
+    const yf = cy + a / 2 - gap;
+    const x0 = cx - l1 + sh[0];
+    const prof = [
+      [x0, yf + sh[1], b + sh[2]],
+      [x0, yf - e + sh[1], b + sh[2]],
+      [x0, yf - k + sh[1], b + h1 + sh[2]],
+    ];
+    const s2 = mkPrism(prof, [l, 0, 0], ['E', 'F', 'G'], ['E_1', 'F_1', 'G_1']);
+    s2.title = 'graniastosłup trójkątny ∥ x (h₁ = ' + h1 + ', e = ' + e + ', l = ' + l + ')';
+    return { s1, s2 };
+  }
+  function typeR(r, sh) {
+    const [d, hh, a, c, n, m, l] = r;
+    const cx = 60,
+      cy = 45;
+    const base = regular([cx, cy], d / 2, 6, 0, 0);
+    const s1 = mkPrism(base, [0, 0, hh], ['A', 'B', 'C', 'D', 'E', 'F'], ['A_1', 'B_1', 'C_1', 'D_1', 'E_1', 'F_1']);
+    s1.title = 'graniastosłup sześciokątny (d = ' + d + ', h = ' + hh + ')';
+    const yr = cy - (d * Math.sqrt(3)) / 4 + m + sh[1];
+    const x0 = cx - l / 2 + sh[0];
+    const prof = [
+      [x0, yr + n / 2, a - c + sh[2]],
+      [x0, yr - n / 2, a - c + sh[2]],
+      [x0, yr, a + sh[2]],
+    ];
+    const s2 = mkPrism(prof, [l, 0, 0], ['K', 'L', 'M'], ['K_1', 'L_1', 'M_1']);
+    s2.title = 'graniastosłup trójkątny ∥ x (c = ' + c + ', n = ' + n + ', l = ' + l + ')';
+    return { s1, s2 };
+  }
   function defs(p) {
     const dx = p.dx,
       dy = p.dy,
       dz = p.dz;
+    if (p.set === 'L2L') return typeL(TL[(p.var || 1) - 1], [dx, dy, dz]);
+    if (p.set === 'L2R') return typeR(TR[(p.var || 1) - 1], [dx, dy, dz]);
+    if (p.set === 'L2z1') return typeR([60, 60, 50, 40, 40, 35, 80], [dx, dy, dz]);
+    if (p.set === 'L2z3') {
+      const vb = [
+        [24.8, 46.8, 0],
+        [66.8, 8.8, 0],
+        [94.8, 64.8, 0],
+      ].map((q) => G.rotAbout(q, [60, 40, 0], [0, 0, 1], G.rad(p.rot - 15)));
+      const s1 = mkPrism(vb, [0, 0, 88], ['P', 'Q', 'R'], ['M', 'N', 'O']);
+      s1.title = 'graniastosłup PQR–MNO (podstawa na π₁)';
+      const tri = [
+        [12 + dx, 77.2 + dy, 15.2 + dz],
+        [12 + dx, 54.8 + dy, 69.2 + dz],
+        [12 + dx, 17.2 + dy, 39.2 + dz],
+      ];
+      const s2 = mkPrism(tri, [104.8, 0, 0], ['A', 'B', 'C'], ['D', 'E', 'F']);
+      s2.title = 'graniastosłup ABC–DEF (podstawa na płaszczyźnie podwójnie rzutującej ⟂ x)';
+      return { s1, s2 };
+    }
     if (p.set === 'a') {
       const s1 = mkPyramid(regular([50, 36], 30, 4, G.rad(p.rot), 0), [50, 36, 82], ['A', 'B', 'C', 'D', 'S']);
       s1.title = 'ostrosłup ABCDS';
@@ -76,6 +153,7 @@
     s2.title = 'graniastosłup EFG (krawędzie ⟂ π₂)';
     return { s1, s2 };
   }
+  const sys0P3 = (p) => p.set === 'L2z3' || p.set === 'L2L' || p.set === 'L2R' || p.set === 'L2z1';
   const nameOf = (S, P) => {
     const v = S.verts.find((q) => V.dist(q.p, P) < 1e-6);
     return v ? v.n : '?';
@@ -100,21 +178,37 @@
   GW.addLesson({
     id: 'm2-wieloscany',
     mod: 2,
+    lista: 'L2',
     title: '2.1 Przenikanie wielościanów',
     v2title: 'Rzuty Monge’a – wielobok przenikania',
+    needP3: (P) => P.set === 'L2z3' || P.set === 'L2L' || P.set === 'L2R' || P.set === 'L2z1',
     opts: [
       {
         k: 'set',
         l: 'Zestaw',
         choices: [
-          ['a', 'A: ostrosłup + graniastosłup ⟂ π₂ (całkowite)'],
-          ['b', 'B: graniastosłup pionowy + ostrosłup (częściowe)'],
-          ['c', 'C: dwa graniastosłupy'],
+          ['L2z1', '📋 Lista 2 · zad. 1: graniastosłup sześciokątny + trójkątny (d=60, m=35, c=40, n=40, l=80)'],
+          ['L2L', '📋 Lista 2 · tabela lewa: graniastosłup kwadratowy + trójkątny (wariant 1–16)'],
+          ['L2R', '📋 Lista 2 · tabela prawa: graniastosłup sześciokątny + trójkątny (wariant 1–16)'],
+          ['L2z3', '📋 Lista 2 · zad. 3: graniastosłupy trójkątne (płaszczyzna podwójnie rzutująca, π₃)'],
+          ['a', 'Przykład A: ostrosłup + graniastosłup ⟂ π₂ (całkowite)'],
+          ['b', 'Przykład B: graniastosłup pionowy + ostrosłup (częściowe)'],
+          ['c', 'Przykład C: dwa graniastosłupy'],
         ],
-        v: 'a',
+        v: 'L2z1',
         rebuildFrame: true,
+        rebuildParams: true,
+      },
+      {
+        k: 'var',
+        l: 'Wariant z tabeli',
+        choices: Array.from({ length: 16 }, (_, i) => [i + 1, 'wariant ' + (i + 1)]),
+        v: 1,
+        rebuildFrame: true,
+        when: (P) => P.set === 'L2L' || P.set === 'L2R',
       },
     ],
+    mistakes: ['W zadaniu z tabelą wymiary bierzesz z <b>jednego wiersza</b> (swój numer ćwiczenia) – nie mieszaj kolumn obu tabel.', 'Graniastosłup trójkątny w tych zadaniach ma krawędzie ∥ x – w π<sub>3</sub> widać jego prawdziwy przekrój (trójkąt), a w π<sub>2</sub> tylko prostokąt.'],
     params: [
       { k: 'dx', l: 'przesunięcie bryły II: x', min: -25, max: 25, v: 0 },
       { k: 'dy', l: 'przesunięcie bryły II: y', min: -25, max: 25, v: 0 },
@@ -131,9 +225,10 @@
       '<li><b>Widoczność krawędzi</b>: części krawędzi wewnątrz drugiej bryły nie istnieją; pozostałe – widoczne, jeśli żadna ściana ich nie zasłania.</li></ol>',
     build(p, B) {
       const { s1, s2 } = defs(p);
+      const tableNote = p.set === 'L2L' || p.set === 'L2R' ? ' <i>Wymiary z wiersza ' + p.var + ' tabeli (' + (p.set === 'L2L' ? 'h, h₁, a, b, l, l₁, e, k = ' + TL[p.var - 1].join(', ') : 'd, h, a, c, n, m, l = ' + TR[p.var - 1].join(', ')) + ').</i>' : p.set === 'L2z1' ? ' <i>Wymiary z rysunku: d = 60, m = 35, c = 40, n = 40, l = 80 (h = 60, a = 50 przyjęto jak w wierszu 2 tabeli).</i>' : '';
       B.step({
         title: 'Dane: ' + s1.title + ' i ' + s2.title,
-        co: 'Bryła I: <b>' + s1.title + '</b>, bryła II: <b>' + s2.title + '</b>. Szukamy wieloboku przenikania i widoczności.',
+        co: 'Bryła I: <b>' + s1.title + '</b>, bryła II: <b>' + s2.title + '</b>. Szukamy wieloboku przenikania i widoczności' + (sys0P3(p) ? ' – w trzech rzutach (π₁, π₂, π₃)' : '') + '.' + tableNote,
         jak: 'Obejrzyj bryły w 3D. Zwróć uwagę na krawędzie, które przechodzą przez drugą bryłę.',
         why: 'Linia przenikania dwóch wielościanów jest łamaną: każdy jej odcinek to część krawędzi przecięcia jednej ściany bryły I z jedną ścianą bryły II, a każdy wierzchołek – przebicie krawędzi jednej bryły ze ścianą drugiej.',
         cam: 'iso',
@@ -186,7 +281,11 @@
         const d = V.sub(e.b, e.a);
         const L = V.len(d);
         let eps, tv, kind;
-        if (Math.abs(d[2]) / L > 0.999) {
+        if (Math.abs(d[0]) / L > 0.999) {
+          eps = G.planePN(e.a, [0, 0, 1]);
+          tv = 'p2';
+          kind = 'poziomą (∥ π<sub>1</sub>, ⟂ π<sub>2</sub> i π<sub>3</sub>)';
+        } else if (Math.abs(d[2]) / L > 0.999) {
           eps = G.planePN(e.a, [0, 1, 0]);
           tv = 'p1';
           kind = 'czołową (∥ π<sub>2</sub>, ⟂ π<sub>1</sub>)';
@@ -340,15 +439,16 @@
       B.step({
         title: 'Widoczność wieloboku przenikania',
         co: 'Odcinek przenikania jest widoczny w danym rzucie ⇔ leży na ścianach widocznych w obu bryłach.',
-        jak: 'Ściana jest widoczna w π<sub>1</sub>, jeśli jest zwrócona do góry (normalna zewnętrzna ma z &gt; 0); w π<sub>2</sub> – jeśli zwrócona do przodu (y &gt; 0). Dla każdego odcinka sprawdzamy obie jego ściany.',
+        jak: 'Ściana jest widoczna w π<sub>1</sub>, jeśli jest zwrócona do góry (normalna zewnętrzna ma z &gt; 0); w π<sub>2</sub> – jeśli zwrócona do przodu (y &gt; 0); w π<sub>3</sub> – jeśli zwrócona w lewo (x &lt; 0). Dla każdego odcinka sprawdzamy obie jego ściany.',
         why: 'Na ścianie niewidocznej wszystko jest zasłonięte przez samą bryłę – więc odcinek leżący na takiej ścianie nie może być widoczny, nawet jeśli druga ściana jest widoczna.',
       });
-      ['p1', 'p2'].forEach((pid, idx) => {
-        const N = sys.get(pid).N;
+      GW.mplanes(sys).forEach((pid) => {
+        const N = sys.get(pid).N,
+          kk = sys.get(pid).k;
         segInfo.forEach((s, i) => {
           const vis = V.dot(s1.poly.planes[s.f1].n, N) > 1e-9 && V.dot(s2.poly.planes[s.f2].n, N) > 1e-9;
-          B.p2.forEach((q) => q.id === 'ls' + i + '|' + (idx + 1) && q.to === undefined && (q.to = B.cur));
-          B.a2({ t: 'seg', id: 'ls' + i + '|' + (idx + 1), a: sys.toSheet(pid, s.a), b: sys.toSheet(pid, s.b), s: vis ? 'res' : 'resd' });
+          B.p2.forEach((q) => q.id === 'ls' + i + '|' + kk && q.to === undefined && (q.to = B.cur));
+          B.a2({ t: 'seg', id: 'ls' + i + '|' + kk, a: sys.toSheet(pid, s.a), b: sys.toSheet(pid, s.b), s: vis ? 'res' : 'resd' });
         });
       });
       // widoczność krawędzi
@@ -362,10 +462,11 @@
       [s1, s2].forEach((S) => S.poly.faces.forEach((f, i) => faces.push({ pts: f, pl: S.poly.planes[i] })));
       const edges = [];
       [s1, s2].forEach((S, si) => S.poly.edges.forEach((e) => edges.push({ a: e.a, b: e.b, id: e.id, other: si ? s1 : s2 })));
-      ['p1', 'p2'].forEach((pid, idx) => {
+      GW.mplanes(sys).forEach((pid) => {
+        const kk = sys.get(pid).k;
         const pcs = GW.visPieces(sys, pid, edges, faces, { omit: (M, e) => e.other.poly.contains(M, 1e-6) });
-        edges.forEach((e) => B.p2.forEach((q) => q.id === e.id + '|' + (idx + 1) && q.to === undefined && (q.to = B.cur)));
-        pcs.forEach((pc) => B.a2({ t: 'seg', id: pc.e.id + '|' + (idx + 1), a: pc.a, b: pc.b, s: pc.vis ? 'vis' : 'hid' }));
+        edges.forEach((e) => B.p2.forEach((q) => q.id === e.id + '|' + kk && q.to === undefined && (q.to = B.cur)));
+        pcs.forEach((pc) => B.a2({ t: 'seg', id: pc.e.id + '|' + kk, a: pc.a, b: pc.b, s: pc.vis ? 'vis' : 'hid' }));
       });
       B.step({
         title: 'Wynik',

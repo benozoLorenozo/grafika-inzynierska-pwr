@@ -40,7 +40,10 @@
         this.ty = drag.ty + dy;
         this.render(false);
       });
-      window.addEventListener('mouseup', () => (drag = null));
+      window.addEventListener('mouseup', () => {
+        this.dragMoved = drag ? drag.moved : false;
+        drag = null;
+      });
       this.svg.addEventListener(
         'wheel',
         (e) => {
@@ -77,8 +80,13 @@
         this.onBgMove && this.onBgMove(null);
       });
       this.svg.addEventListener('click', (e) => {
+        if (this.dragMoved) return;
         const t = e.target.closest && e.target.closest('[data-id]');
         this.onClick && this.onClick(t ? t.getAttribute('data-id') : null);
+        if (this.onSheetClick) {
+          const r = this.svg.getBoundingClientRect();
+          this.onSheetClick([(e.clientX - r.left - this.tx) / this.k, (e.clientY - r.top - this.ty) / this.k], e);
+        }
       });
       new ResizeObserver(() => {
         if (this.autoFit && this.box) this.fit(this.box);
@@ -117,6 +125,16 @@
     setSrc(set) {
       this.src = set || new Set();
       this.render(false);
+    }
+    /* chwilowy znacznik (np. pudło w trybie „Rozwiąż sam”) */
+    setFlash(P) {
+      this.flash = { p: P, t: performance.now() };
+      this.render(false);
+      clearTimeout(this._ft);
+      this._ft = setTimeout(() => {
+        this.flash = null;
+        this.render(false);
+      }, 1400);
     }
     /* ---------- renderowanie ---------- */
     render(fresh) {
@@ -246,6 +264,11 @@
       const all = this.prims.map((p) => [p, false]).concat(this.ov.map((p) => [p, true]));
       all.sort((a, b) => order(a[0]) - order(b[0]) + (a[0].z || 0) - (b[0].z || 0));
       all.forEach(([p, ov]) => draw(p, ov));
+      if (this.flash) {
+        const q = this.S(this.flash.p);
+        out.push('<path class="flash" d="M' + (q[0] - 7) + ' ' + (q[1] - 7) + 'L' + (q[0] + 7) + ' ' + (q[1] + 7) + 'M' + (q[0] - 7) + ' ' + (q[1] + 7) + 'L' + (q[0] + 7) + ' ' + (q[1] - 7) + '"/>');
+      }
+      if (this.noLabels) labels.length = 0;
       // etykiety – zachłanne unikanie kolizji
       const W = this.el.clientWidth,
         H = this.el.clientHeight;

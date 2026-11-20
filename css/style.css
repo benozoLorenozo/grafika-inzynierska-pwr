@@ -5,13 +5,28 @@ button:hover { background: #e6e6e6; }
 button.on { background: #222; color: #fff; border-color: #222; }
 #top { display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-bottom: 1px solid #ccc; }
 .brand { font-weight: 700; white-space: nowrap; }
+.tools { margin-left: auto; display: flex; gap: 4px; }
+.badge { display: inline-block; font-size: 10px; background: #fff3c4; border: 1px solid #d9b84a; border-radius: 3px; padding: 0 3px; color: #6b5200; }
+button.on .badge { background: #6b5200; color: #fff3c4; }
+.onlylists { margin-left: auto; font-size: 12px; color: #555; align-self: center; }
+#tabs { display: none; }
 #mods { display: flex; gap: 4px; flex-wrap: wrap; }
 #mods button { padding: 4px 10px; }
 #lessonbar { display: flex; gap: 4px; flex-wrap: wrap; padding: 5px 10px; border-bottom: 1px solid #ddd; background: #fafafa; }
 #lessonbar button { border-color: #bbb; }
-#main { display: grid; grid-template-columns: 370px 1fr 1fr; height: calc(100vh - 78px); min-height: 520px; }
-#side { overflow-y: auto; border-right: 1px solid #ccc; padding: 8px 10px 30px; }
-.view { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #ddd; }
+#main { display: grid; grid-template-columns: 360px 6px 1fr 6px 1fr; height: calc(100vh - 78px); min-height: 520px; }
+.gutter { cursor: col-resize; background: #e4e4e4; border-left: 1px solid #ccc; border-right: 1px solid #ccc; }
+.gutter:hover { background: #c9d7ee; }
+#main[data-layout='1'] #v2wrap, #main[data-layout='2'] #v3wrap { display: none; }
+#side { grid-column: 1; } #main > .gutter:nth-of-type(1) { grid-column: 2; } #v3wrap { grid-column: 3; } #main > .gutter:nth-of-type(2) { grid-column: 4; } #v2wrap { grid-column: 5; }
+#main > * { grid-row: 1; min-height: 0; }
+#side { overflow-y: auto; padding: 8px 10px 30px; min-width: 0; }
+.view { display: flex; flex-direction: column; min-width: 0; }
+.vbar .lay { margin-left: 6px; display: inline-flex; }
+.vbar .lay button { border-radius: 0; margin-left: -1px; }
+#zsBox { display: none; align-items: center; gap: 4px; font-size: 12px; margin-left: 6px; }
+#zsBox input { width: 80px; }
+#zsTxt { min-width: 28px; font-variant-numeric: tabular-nums; }
 .vbar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 6px; border-bottom: 1px solid #ddd; background: #fafafa; min-height: 32px; }
 .vbar button { padding: 1px 7px; font-size: 12px; }
 .vbar .hint { color: #888; font-size: 11px; margin-left: auto; }
@@ -109,10 +124,11 @@ text.lab.res { fill: #b00; }
 text.lab.small { font-size: 11px; }
 text.lab.blue { fill: #1d4f9c; }
 text.lab.brown { fill: #6b4423; font-size: 11px; }
-/* podświetlenia */
-.hl:not(.hit) { stroke: #ff00aa !important; }
+/* podświetlenia (tekst: tylko kolor, biała obwódka zostaje – czytelność) */
+line.hl:not(.hit), path.hl:not(.hit), circle.hl:not(.hit), polyline.hl:not(.hit) { stroke: #ff00aa !important; }
 circle.pt.hl { fill: #ff00aa !important; r: 5px; }
-text.hl { fill: #ff00aa !important; }
+text.hl { fill: #d4008e !important; }
+text.lab.hl { stroke: #fff !important; stroke-width: 3px; font-weight: 600; }
 path.fillpoly.hl { fill: #ff00aa !important; fill-opacity: .25 !important; }
 .src:not(.hit) { animation: pulse 0.9s ease-in-out infinite; }
 circle.pt.src { animation: pulsefill 0.9s ease-in-out infinite; }
@@ -125,8 +141,62 @@ circle.pt.src { animation: pulsefill 0.9s ease-in-out infinite; }
 .newpop { animation: pop .6s ease-out; transform-box: fill-box; transform-origin: center; }
 @keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.8); } 100% { transform: scale(1); } }
 .src.newdraw { animation: draw .8s ease-out forwards, pulse 0.9s ease-in-out infinite; }
-@media (max-width: 1100px) {
-  #main { grid-template-columns: 1fr; height: auto; }
-  #side { border-right: none; max-height: none; }
-  .view { height: 70vh; }
+
+/* ---------- quiz „Rozwiąż sam” ---------- */
+#quizBox { display: none; border: 2px solid #1d4f9c; background: #f2f6fd; padding: 6px 8px; margin: 4px 0 8px; border-radius: 3px; }
+.qscore { font-size: 11px; color: #555; margin-bottom: 3px; }
+.qmsg { margin: 4px 0; }
+.qmsg.ok { color: #0b7a3e; font-weight: 600; }
+.qmsg.bad { color: #b00020; font-weight: 600; }
+.qlab { font: italic 700 16px "Times New Roman", serif; color: #1d4f9c; }
+#stepBox.quizhide .layer.jak, #stepBox.quizhide .layer.why { display: none; }
+.flash { stroke: #b00020; stroke-width: 2.5px; }
+/* ---------- filtry ---------- */
+.filtgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 8px; font-size: 12px; margin: 4px 0; }
+#mistakes ul { margin: 4px 0; padding-left: 18px; font-size: 12px; }
+#mistakes li { margin-bottom: 3px; }
+/* ---------- ściągawka ---------- */
+#cheat { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; align-items: center; justify-content: center; }
+.cheatin { background: #fff; width: min(980px, 96vw); max-height: 92vh; display: flex; flex-direction: column; border: 1px solid #888; box-shadow: 0 4px 18px rgba(0,0,0,.3); }
+.cheatin.small { width: min(520px, 96vw); }
+.cheathead { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 10px; border-bottom: 1px solid #ccc; background: #fafafa; }
+.cheathead #cheatX { margin-left: auto; }
+.cheattabs { display: flex; flex-wrap: wrap; gap: 3px; }
+.cheattabs button { font-size: 12px; padding: 1px 6px; }
+.cheatbody { overflow-y: auto; padding: 8px 14px 16px; font-size: 13px; }
+.cheatbody h3 { margin: 12px 0 4px; font-size: 14px; border-bottom: 1px solid #ddd; }
+.cheatbody table { border-collapse: collapse; margin: 4px 0; }
+.cheatbody td, .cheatbody th { border: 1px solid #ccc; padding: 2px 6px; vertical-align: top; }
+.cheatbody .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+kbd { border: 1px solid #aaa; border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; font: 12px monospace; background: #f6f6f6; }
+/* ---------- tryb kartki: czarno-biały rysunek ---------- */
+body.paper svg.sheet line:not(.hit):not(.hl), body.paper svg.sheet path:not(.hit):not(.hl):not(.fillpoly) { stroke: #000 !important; animation: none !important; }
+body.paper svg.sheet .s-given { stroke-width: 1.6px; }
+body.paper svg.sheet .s-vis, body.paper svg.sheet .s-res, body.paper svg.sheet .s-res2 { stroke-width: 2.2px !important; }
+body.paper svg.sheet .s-hid, body.paper svg.sheet .s-hidv, body.paper svg.sheet .s-resd { stroke-width: .8px !important; stroke-dasharray: 5 3 !important; }
+body.paper svg.sheet .s-thin, body.paper svg.sheet .s-odn, body.paper svg.sheet .s-aux, body.paper svg.sheet .s-auxd, body.paper svg.sheet .s-aux2, body.paper svg.sheet .s-sec, body.paper svg.sheet .s-dist, body.paper svg.sheet .s-cont, body.paper svg.sheet .s-axis, body.paper svg.sheet .s-ray, body.paper svg.sheet .s-light, body.paper svg.sheet .s-water, body.paper svg.sheet .s-eye { stroke-width: .5px !important; opacity: 1 !important; }
+body.paper svg.sheet .s-auxd { stroke-dasharray: 10 3 2 3 !important; }
+body.paper svg.sheet path.fillpoly { fill-opacity: 0 !important; stroke: none !important; }
+body.paper svg.sheet circle.pt:not(.hl) { fill: #000 !important; r: 1.8px; }
+body.paper svg.sheet text:not(.hl) { fill: #000 !important; }
+/* ---------- telefon / wąski ekran ---------- */
+@media (max-width: 900px) {
+  #tabs { display: flex; gap: 3px; padding: 4px 6px; border-bottom: 1px solid #ccc; background: #f4f4f4; }
+  #tabs button { flex: 1; padding: 6px; }
+  #main { display: block !important; height: calc(100vh - 120px); }
+  .gutter { display: none; }
+  #side, .view { height: 100%; }
+  body[data-tab='side'] #v3wrap, body[data-tab='side'] #v2wrap, body[data-tab='v3'] #side, body[data-tab='v3'] #v2wrap, body[data-tab='v2'] #side, body[data-tab='v2'] #v3wrap { display: none !important; }
+  body[data-tab='v3'] #v3wrap, body[data-tab='v2'] #v2wrap { display: flex !important; }
+  #top { flex-wrap: wrap; }
+  .tools { margin-left: 0; }
+  .vbar .hint, .vbar .lay { display: none; }
+  .filtgrid { grid-template-columns: 1fr; }
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  #lessonbar button, #mods button { white-space: normal; text-align: left; max-width: 100%; }
+  #side select, #params select { max-width: 100%; }
+  #tabs button { min-width: 0; }
+  .onlylists { margin-left: 0; }
+  .vbar { flex-wrap: wrap; }
+  .cheatbody .cols { grid-template-columns: 1fr; }
 }

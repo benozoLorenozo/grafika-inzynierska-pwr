@@ -16,6 +16,11 @@
     B.useSys(sys);
     B.addPlane('p1', 1, 'p2', [0, 0], [1, 0], [0, 1], null);
     B.planeFrom.p1 = 0;
+    if (B.p3x != null) {
+      // rzutnia boczna π3 ⟂ x, po prawej stronie π2 (widok z lewej, oś y w prawo)
+      B.addPlane('p3', 3, 'p2', [B.p3x, 0], [0, -1], [1, 0], 'p1');
+      B.planeFrom.p3 = 0;
+    }
     return sys;
   }
   GW.monge = monge;
@@ -26,6 +31,18 @@
     { k: n + 'z', l: n + ': z (odl. od π₁)', min: 0, max: 80, v: z },
   ];
   GW.xyzParams = xyzParams;
+  const vParams = (k, nm, P) => [
+    { k: k + 'x', l: nm + ': x', min: 0, max: 120, step: 0.5, v: P[0] },
+    { k: k + 'y', l: nm + ': y', min: 0, max: 90, step: 0.5, v: P[1] },
+    { k: k + 'z', l: nm + ': z', min: 0, max: 90, step: 0.5, v: P[2] },
+  ];
+  const vVals = (keys, pts) => {
+    const o = {};
+    keys.forEach((k, i) => ['x', 'y', 'z'].forEach((c, j) => (o[k + c] = pts[i][j])));
+    return o;
+  };
+  GW.vParams = vParams;
+  GW.vVals = vVals;
   GW.P3 = P3;
 
   function tri(B, names, pts, o = {}) {
@@ -182,7 +199,7 @@
         const a = T.pts[c.i],
           b = T.pts[c.j];
         const end = c.t > 1 ? b : a;
-        ['p1', 'p2'].forEach((pid) => B.a2({ t: 'seg', id: pre + 'ext' + nm, a: sys.toSheet(pid, end), b: sys.toSheet(pid, c.p), s: 'thin' }));
+        GW.mplanes(sys).forEach((pid) => B.a2({ t: 'seg', id: pre + 'ext' + nm, a: sys.toSheet(pid, end), b: sys.toSheet(pid, c.p), s: 'thin' }));
         B.a3({ t: 'seg', id: pre + 'ext' + nm, a: end, b: c.p, s: 'thin' });
       }
       B.src(c.edge + '|' + kt, c.edge + '|' + kr);
@@ -487,101 +504,290 @@
   });
 
   /* =================================================================
-     1.2 Przebicie prostej z płaszczyzną trójkąta
+     Dane z Listy 1 (odczytane z rysunków; jednostki: mm)
+     ================================================================= */
+  const L1 = {
+    KLM: { tri: [[16.8, 62, 32.2], [88.6, 58.5, 11.2], [68.25, 14, 73.5]], a: [[31.5, 11.8, 13.3], [96.95, 72.8, 68.25]] },
+    RST: { tri: [[17.5, 61.6, 32.9], [68.25, 13.3, 74.2], [88.55, 63, 11.9]], a: [[17.5, 77.35, 76.9], [92.05, 13.2, 0]] },
+    ABC4: [[28.7, 82.25, 82.95], [109.2, 73.15, 60.55], [57.05, 22.75, 5.95]],
+    RST4: [[18.2, 69.3, 38.5], [75.25, 15.75, 84], [99.05, 70.35, 13.65]],
+  };
+  GW.L1 = L1;
+  const lineParams = [
+    { k: 'ldx', l: 'prosta: przesunięcie x', min: -25, max: 25, step: 0.5, v: 0 },
+    { k: 'ldy', l: 'prosta: przesunięcie y', min: -20, max: 20, step: 0.5, v: 0 },
+    { k: 'ldz', l: 'prosta: przesunięcie z', min: -20, max: 20, step: 0.5, v: 0 },
+    { k: 'lrot', l: 'prosta: obrót wokół pionu [°]', min: -40, max: 40, v: 0 },
+  ];
+  const moveLine = (p, D0, E0) => {
+    const M = V.mid(D0, E0);
+    const tr = (Q) => V.add(G.rotAbout(Q, M, [0, 0, 1], G.rad(p.lrot || 0)), [p.ldx || 0, p.ldy || 0, p.ldz || 0]);
+    return [tr(D0), tr(E0)];
+  };
+  const visRule = (k) => (k === 1 ? 'Wyższy (większa wysokość z, dalej od x<sub>12</sub> w π<sub>2</sub>)' : k === 2 ? 'Bliższy obserwatora (większe y, dalej od x<sub>12</sub> w π<sub>1</sub>)' : 'Bardziej z lewej (mniejsze x – patrzymy na π<sub>3</sub> z lewej strony)');
+  const visWhy = (k) => 'Obserwator rzutu ' + (k === 1 ? 'poziomego patrzy z góry (wzdłuż osi z) – zasłania to, co wyżej' : k === 2 ? 'pionowego patrzy od przodu (wzdłuż osi y) – zasłania to, co bliżej' : 'bocznego patrzy z lewej (wzdłuż osi x) – zasłania to, co bardziej z lewej') + '. Dwa punkty na jednym promieniu rzutującym różnią się tylko tą „głębokością”, którą widać w drugim rzucie.';
+  const visCam = (k) => (k === 1 ? { dir: [0.15, 0.25, 1], up: [0, -1, 0] } : k === 2 ? { dir: [0.1, 1, 0.15] } : { dir: [-1, 0.12, 0.12] });
+  const kName = (k) => (k === 1 ? 'poziomym π₁' : k === 2 ? 'pionowym π₂' : 'bocznym π₃');
+  GW.visRule = visRule;
+  GW.visCam = visCam;
+  GW.kName = kName;
+
+  /* widoczność prostej względem trójkąta we wszystkich rzutach podstawowych (punkty zbieżne) */
+  function lineTriVisibility(B, sys, D, E, lname, triPts, triNames, Pp) {
+    const edges = [0, 1, 2].map((i) => ({ A: triPts[i], B: triPts[(i + 1) % 3], name: triNames[i] + triNames[(i + 1) % 3] }));
+    const Ls = [{ A: D, B: E, name: lname }];
+    const pairs = { p1: ['3', '4'], p2: ['5', '6'], p3: ['7', '8'] };
+    GW.mplanes(sys).forEach((pid) => {
+      const k = sys.get(pid).k;
+      const cp = coverPoints(B, sys, pid, Ls, edges, pairs[pid], { avoid: Pp ? [sys.toSheet(pid, Pp)] : [] });
+      const ko = cp ? cp.ko : k === 1 ? 2 : 1;
+      B.step({
+        title: 'Widoczność w rzucie ' + kName(k) + ' – punkty zbieżne',
+        co: cp
+          ? 'Punkty zbieżne <b>' + cp.n1 + '</b> (na ' + lname + ') i <b>' + cp.n2 + '</b> (na boku ' + cp.s2.name + ') mają wspólny rzut ' + h(lab(cp.n1, k)) + ' ≡ ' + h(lab(cp.n2, k)) + '. Rozstrzygamy, który przesłania drugi.'
+          : 'Rzuty ' + lname + ' i boków trójkąta nie krzyżują się w π<sub>' + k + '</sub> poza punktem przebicia – widoczność wynika bezpośrednio z położenia prostej.',
+        jak: cp
+          ? 'Odnoszącymi przenosimy oba punkty do π<sub>' + ko + '</sub>: ' + h(lab(cp.n1, ko)) + ' na ' + h(lab(lname, ko)) + ', ' + h(lab(cp.n2, ko)) + ' na ' + h(lab(cp.s2.name, ko)) + '. ' + visRule(k) + ' jest punkt <b>' + (cp.vis1 ? cp.n1 + ' – więc w tym miejscu widoczna jest prosta ' + lname : cp.n2 + ' – więc w tym miejscu trójkąt zasłania prostą ' + lname) + '</b>. Po drugiej stronie punktu ' + h(lab('P', k)) + ' widoczność się odwraca.'
+          : '',
+        why: visWhy(k),
+        cam: visCam(k),
+      });
+      if (cp) addCover(B, sys, cp);
+      const pcs = GW.visPieces(sys, pid, [{ a: D, b: E }], [{ pts: triPts, pl: G.plane3(...triPts) }]);
+      B.p2.forEach((q) => {
+        if (q.id === lname + '|' + k && q.to === undefined) q.to = B.cur;
+      });
+      pcs.forEach((pc) => B.a2({ t: 'seg', id: lname + '|' + k, a: pc.a, b: pc.b, s: pc.vis ? 'vis' : 'hid' }));
+    });
+  }
+  GW.lineTriVisibility = lineTriVisibility;
+
+  /* =================================================================
+     1.2 Przebicie prostej z płaszczyzną trójkąta (płaszczyzna rzutująca)
      ================================================================= */
   GW.addLesson({
     id: 'm1-przebicie',
     mod: 1,
-    title: '1.2 Przebicie prostej z trójkątem',
+    lista: 'L1 Z2',
+    title: '1.2 Przebicie prostej z trójkątem (płaszczyzna rzutująca)',
     v2title: 'Rzuty Monge’a – przebicie i widoczność',
-    params: [].concat(xyzParams('D', 12, 10, 58), xyzParams('E', 100, 62, 12), [
-      { k: 'Cz', l: 'C: z (wierzch. trójkąta)', min: 20, max: 80, v: 70 },
-      { k: 'By', l: 'B: y', min: 0, max: 70, v: 12 },
-    ]),
+    opts: [
+      {
+        k: 'set',
+        l: 'Zadanie',
+        choices: [
+          ['L1Z2', '📋 Lista 1 · zad. 2: trójkąt RST, prosta a'],
+          ['L1Z1', '📋 Lista 1 · zad. 1: trójkąt KLM, prosta a (tu metodą płaszczyzny rzutującej)'],
+          ['own', 'Przykład: trójkąt ABC, prosta l = DE'],
+        ],
+        v: 'L1Z2',
+        rebuildFrame: true,
+      },
+      {
+        k: 'meth',
+        l: 'Płaszczyzna pomocnicza',
+        choices: [
+          ['p1', 'poziomo-rzutująca ε ⟂ π₁ (jak w treści zad. 2)'],
+          ['p2', 'pionowo-rzutująca ε ⟂ π₂'],
+          ['auto', 'dobierz automatycznie'],
+        ],
+        v: 'p1',
+      },
+    ],
+    params: lineParams,
+    mistakes: ['Ślad płaszczyzny poziomo-rzutującej rysujemy na rzucie <b>poziomym</b> prostej (pokrywa się z a′), a punkty 1, 2 przenosimy do π<sub>2</sub> – nie odwrotnie.'],
     algo:
-      '<ol><li><b>Płaszczyzna pomocnicza</b>: przez prostą l prowadzimy płaszczyznę rzutującą ε (np. ⟂ π<sub>2</sub>). Jej ślad v<sub>ε</sub> pokrywa się z l″ – zero konstrukcji.</li>' +
-      '<li><b>Krawędź pomocnicza</b> k = ε ∩ (ABC): w rzucie, gdzie ε jest prostą, odczytujemy punkty 1″, 2″ przecięcia v<sub>ε</sub> z bokami trójkąta. Odnoszącymi przenosimy na rzuty boków w drugim rzucie → k′ = 1′2′.</li>' +
-      '<li><b>Punkt przebicia</b>: P′ = k′ ∩ l′, odnosząca → P″ na l″.</li>' +
-      '<li><b>Widoczność</b> – punkty zbieżne (pokrywające się): w miejscu, gdzie rzuty l i boku trójkąta się krzyżują, mamy dwa punkty (jeden na l, drugi na boku) o wspólnym rzucie. Ich drugie rzuty mówią, który jest bliżej obserwatora: w π<sub>1</sub> widoczny jest <i>wyższy</i> (większe z), w π<sub>2</sub> – <i>bliższy</i> (większe y).</li>' +
-      '<li>W punkcie przebicia widoczność prostej zmienia się na przeciwną (prosta „przechodzi na drugą stronę” płaszczyzny).</li></ol>' +
-      '<p class="note">Dlaczego płaszczyzna rzutująca? Bo jedna z jej projekcji jest prostą – znamy tam od razu rzuty wszystkich jej punktów. Zadanie przestrzenne (prosta ∩ płaszczyzna) zamieniamy na płaskie (prosta ∩ prosta w jednej płaszczyźnie ε).</p>',
+      '<ol><li><b>Płaszczyzna pomocnicza</b>: przez prostą prowadzimy płaszczyznę rzutującą ε: <i>poziomo-rzutującą</i> (⟂ π<sub>1</sub>, ślad h<sub>ε</sub> ≡ a′) lub <i>pionowo-rzutującą</i> (⟂ π<sub>2</sub>, ślad v<sub>ε</sub> ≡ a″). Zero konstrukcji – ślad pokrywa się z rzutem prostej.</li>' +
+      '<li><b>Krawędź pomocnicza</b> k = ε ∩ trójkąt: w rzucie, gdzie ε jest prostą, odczytujemy punkty 1, 2 przecięcia śladu z bokami trójkąta. Odnoszącymi przenosimy na rzuty boków w drugim rzucie → k.</li>' +
+      '<li><b>Punkt przebicia</b>: P = k ∩ a w drugim rzucie, odnosząca → P na śladzie.</li>' +
+      '<li><b>Widoczność</b> – punkty zbieżne: w π<sub>1</sub> widoczny jest <i>wyższy</i>, w π<sub>2</sub> – <i>bliższy</i>, w π<sub>3</sub> – <i>bardziej z lewej</i>.</li>' +
+      '<li>W punkcie przebicia widoczność prostej zmienia się na przeciwną.</li></ol>' +
+      '<p class="note">Dlaczego płaszczyzna rzutująca? Bo jeden z jej rzutów jest prostą – znamy tam od razu rzuty wszystkich jej punktów. Zadanie przestrzenne (prosta ∩ płaszczyzna) zamieniamy na płaskie (prosta ∩ prosta w ε).</p>',
     build(p, B) {
-      const A = [10, 40, 12],
-        Bp = [90, p.By, 25],
-        C = [58, 62, p.Cz];
-      const D = P3(p, 'D'),
-        E = P3(p, 'E');
+      const set = p.set;
+      const nm = set === 'own' ? ['A', 'B', 'C'] : set === 'L1Z1' ? ['K', 'L', 'M'] : ['R', 'S', 'T'];
+      const triPts = set === 'own' ? [[10, 40, 12], [90, 12, 25], [58, 62, 70]] : set === 'L1Z1' ? L1.KLM.tri : L1.RST.tri;
+      const [D0, E0] = set === 'own' ? [[12, 10, 58], [100, 62, 12]] : set === 'L1Z1' ? L1.KLM.a : L1.RST.a;
+      const [D, E] = moveLine(p, D0, E0);
+      const ln = set === 'own' ? 'l' : 'a';
+      const tn = nm.join('');
       B.step({
-        title: 'Dane: trójkąt ABC i prosta l = DE',
-        co: 'Trójkąt <b>ABC</b> (wycinek płaszczyzny) i odcinek prostej <b>l = DE</b>. Szukamy punktu przebicia P oraz widoczności l względem trójkąta.',
-        jak: 'Najedź na elementy rysunku, aby zobaczyć ich odpowiedniki w 3D. Zauważ, że z samych rzutów nie widać od razu, gdzie l przechodzi przez trójkąt – rzuty przecięć l′ z trójkątem i l″ z trójkątem to <i>różne</i> punkty przestrzeni.',
+        title: 'Dane: trójkąt ' + tn + ' i prosta ' + ln,
+        co: 'Trójkąt <b>' + tn + '</b> (wycinek płaszczyzny) i prosta <b>' + ln + '</b>. Szukamy punktu przebicia P oraz widoczności ' + ln + ' względem trójkąta (widoczne – linia ciągła gruba, niewidoczne – kreskowa cienka).',
+        jak: 'Najedź na elementy rysunku, aby zobaczyć ich odpowiedniki w 3D. Z samych rzutów nie widać, gdzie ' + ln + ' przechodzi przez trójkąt – przecięcia ' + ln + '′ i ' + ln + '″ z trójkątem to <i>różne</i> punkty przestrzeni.',
         why: 'W rzucie płaszczyzna ogólnego położenia „przykrywa” obszar, a nie linię – nie możemy bezpośrednio wskazać przebicia. Potrzebujemy pomocniczej płaszczyzny, która zamieni problem przestrzenny na płaski.',
         cam: 'iso',
       });
       const sys = monge(B);
-      tri(B, ['A', 'B', 'C'], [A, Bp, C]);
-      B.mPoint('D', D);
-      B.mPoint('E', E);
-      B.mSeg('l', D, E, { s: 'given', name: 'l', what: 'prostej l', label: 'l' });
-      const T = { pts: [A, Bp, C], names: ['A', 'B', 'C'] };
-      const L = { A: D, B: E, name: 'l', id: 'l' };
-      const r = pierce(B, sys, L, T, { detail: true });
-      if (!r.P) return;
-      // widoczność
-      const edges = [
-        { A, B: Bp, name: 'AB' },
-        { A: Bp, B: C, name: 'BC' },
-        { A: C, B: A, name: 'CA' },
-      ];
-      const Ls = [{ A: D, B: E, name: 'l' }];
-      ['p1', 'p2'].forEach((pid, idx) => {
-        const k = idx === 0 ? 1 : 2;
-        const nm = idx === 0 ? ['3', '4'] : ['5', '6'];
-        const cp = coverPoints(B, sys, pid, Ls, edges, nm, { avoid: [sys.toSheet(pid, r.P)] });
-        const ko = k === 1 ? 2 : 1;
-        B.step({
-          title: 'Widoczność w rzucie ' + (k === 1 ? 'poziomym π₁' : 'pionowym π₂') + ' – punkty zbieżne',
-          co: cp
-            ? 'Punkty zbieżne <b>' + cp.n1 + '</b> (na l) i <b>' + cp.n2 + '</b> (na boku ' + cp.s2.name + ') mają wspólny rzut ' + h(lab(cp.n1, k)) + ' ≡ ' + h(lab(cp.n2, k)) + '. Rozstrzygamy, który przesłania drugi.'
-            : 'Rzuty l i boków trójkąta nie krzyżują się w π<sub>' + k + '</sub> poza punktem przebicia – widoczność wynika bezpośrednio z położenia l.',
-          jak: cp
-            ? 'Odnoszącymi przenosimy oba punkty do π<sub>' +
-              ko +
-              '</sub>: ' +
-              h(lab(cp.n1, ko)) +
-              ' na l' +
-              (ko === 1 ? '′' : '″') +
-              ', ' +
-              h(lab(cp.n2, ko)) +
-              ' na ' +
-              h(lab(cp.s2.name, ko)) +
-              '. ' +
-              (k === 1 ? 'Wyższy (większa wysokość z, dalej od x<sub>12</sub> w π<sub>2</sub>)' : 'Bliższy obserwatora (większe y, dalej od x<sub>12</sub> w π<sub>1</sub>)') +
-              ' jest punkt <b>' +
-              (cp.vis1 ? cp.n1 + ' – więc w tym miejscu widoczna jest prosta l' : cp.n2 + ' – więc w tym miejscu trójkąt zasłania prostą l') +
-              '</b>. Po drugiej stronie punktu ' +
-              h(lab('P', k)) +
-              ' widoczność się odwraca.'
-            : '',
-          why: 'Obserwator rzutu ' + (k === 1 ? 'poziomego patrzy z góry (wzdłuż osi z) – zasłania to, co wyżej' : 'pionowego patrzy od przodu (wzdłuż osi y) – zasłania to, co bliżej') + '. Dwa punkty na jednym promieniu rzutującym różnią się tylko tą „głębokością”, którą widać w drugim rzucie.',
-          cam: k === 1 ? { dir: [0.15, 0.25, 1], up: [0, -1, 0] } : { dir: [0.1, 1, 0.15] },
-        });
-        if (cp) addCover(B, sys, cp);
-        // wynik widoczności w danym rzucie
-        const pcs = GW.visPieces(sys, pid, [{ a: D, b: E }], [{ pts: [A, Bp, C], pl: G.plane3(A, Bp, C) }]);
-        B.p2.forEach((q) => {
-          if (q.id === 'l|' + k && q.to === undefined) q.to = B.cur;
-        });
-        pcs.forEach((pc) => B.a2({ t: 'seg', id: 'l|' + k, a: pc.a, b: pc.b, s: pc.vis ? 'vis' : 'hid' }));
-      });
+      tri(B, nm, triPts);
+      B.mPoint('D', D, set === 'own' ? {} : { lab: false, s: 'thin', info: 'Punkt pomocniczy prostej ' + ln });
+      B.mPoint('E', E, set === 'own' ? {} : { lab: false, s: 'thin', info: 'Punkt pomocniczy prostej ' + ln });
+      B.mSeg(ln, D, E, { s: 'given', name: ln, what: 'prostej ' + ln, label: ln });
+      const T = { pts: triPts, names: nm };
+      const r = pierce(B, sys, { A: D, B: E, name: ln, id: ln }, T, { detail: true, tv: p.meth === 'auto' ? undefined : p.meth });
+      if (!r.P) {
+        B.data.ok = false;
+        return;
+      }
+      B.data.ok = !!(r.insideTri && r.onSeg);
+      lineTriVisibility(B, sys, D, E, ln, triPts, nm, r.P);
       B.step({
         title: 'Wynik',
-        co: 'Punkt przebicia <b>P</b> (' + r.P.map(G.f1).join('; ') + ') i widoczność prostej l w obu rzutach.' + (r.insideTri && r.onSeg ? '' : ' <b>Uwaga:</b> P leży poza trójkątem/odcinkiem – l nie przebija trójkąta.'),
-        jak: 'Linia ciągła gruba – widoczna, przerywana – niewidoczna. Zmiana widoczności zawsze w P′ i P″ (oraz na konturze trójkąta).',
-        why: 'Zmień w trybie eksperymentu położenie D, E lub wierzchołków – cała konstrukcja (ε, 1, 2, k, P, punkty zbieżne) przeliczy się. Spróbuj ustawić l prawie ⟂ π<sub>2</sub> – algorytm automatycznie wybierze płaszczyznę ⟂ π<sub>1</sub>.',
+        co: 'Punkt przebicia <b>P</b> (' + r.P.map(G.f1).join('; ') + ') i widoczność prostej ' + ln + ' we wszystkich rzutach.' + (r.insideTri && r.onSeg ? '' : ' <b>Uwaga:</b> P leży poza trójkątem/odcinkiem – prosta nie przebija trójkąta.'),
+        jak: 'Linia ciągła gruba – widoczna, kreskowa cienka – niewidoczna. Zmiana widoczności zawsze w P′ i P″ (oraz na konturze trójkąta).',
+        why: 'Zmień metodę (płaszczyzna ⟂ π<sub>1</sub> albo ⟂ π<sub>2</sub>) – punkt P wychodzi ten sam, bo jest jednoznaczny. Przesuń prostą suwakami – cała konstrukcja się przeliczy.',
         cam: 'iso',
       });
       B.src('P', 'P|1', 'P|2');
+    },
+  });
+
+  /* =================================================================
+     1.3 Przebicie metodą transformacji (Lista 1, zad. 1)
+     ================================================================= */
+  GW.addLesson({
+    id: 'm1-przebicie-tr',
+    mod: 1,
+    lista: 'L1 Z1',
+    title: '1.3 Przebicie metodą transformacji (π₄)',
+    v2title: 'Przebicie: π₄ ⟂ płaszczyzny trójkąta',
+    opts: [
+      {
+        k: 'set',
+        l: 'Zadanie',
+        choices: [
+          ['L1Z1', '📋 Lista 1 · zad. 1: trójkąt KLM, prosta a'],
+          ['L1Z2', '📋 Lista 1 · zad. 2: trójkąt RST, prosta a (tu transformacją)'],
+        ],
+        v: 'L1Z1',
+        rebuildFrame: true,
+      },
+    ],
+    params: lineParams.concat([{ k: 'off', l: 'odsunięcie osi x₁₄', min: 6, max: 40, v: 14 }]),
+    cams: [{ l: 'Obserwator π₄', cam: { obs: 'p4' }, title: 'Patrz wzdłuż poziomej h – trójkąt widać jako odcinek' }],
+    mistakes: ['Oś x<sub>14</sub> musi być <b>prostopadła do h′</b> (rzutu poziomej), a nie do boku trójkąta.', 'Na π<sub>4</sub> przenosimy wysokości z (odległości rzutów pionowych od x<sub>12</sub>) – także dla dwóch punktów prostej a.'],
+    algo:
+      '<ol><li>Prowadzimy <b>poziomą h</b> płaszczyzny trójkąta (h″ ∥ x<sub>12</sub>).</li>' +
+      '<li>Nowa rzutnia <b>π<sub>4</sub> ⟂ π<sub>1</sub> i ⟂ h</b> ⇒ oś x<sub>14</sub> ⟂ h′. Płaszczyzna trójkąta staje się rzutująca względem π<sub>4</sub>.</li>' +
+      '<li>Rzutujemy na π<sub>4</sub> wierzchołki i dwa punkty prostej a (odległość od x<sub>14</sub> = odległość rzutu pionowego od x<sub>12</sub>). Trójkąt → <b>odcinek</b>, prosta → prosta a<sup>IV</sup>.</li>' +
+      '<li><b>P<sup>IV</sup> = a<sup>IV</sup> ∩ odcinek</b> – przebicie widać bezpośrednio.</li>' +
+      '<li>Powrót: odnosząca ⟂ x<sub>14</sub> z P<sup>IV</sup> do a′ → P′; odnosząca ⟂ x<sub>12</sub> do a″ → P″.</li>' +
+      '<li>Widoczność – punktami zbieżnymi (w π<sub>4</sub> widać od razu, która część prostej jest nad płaszczyzną).</li></ol>',
+    build(p, B) {
+      const isK = p.set === 'L1Z1';
+      const nm = isK ? ['K', 'L', 'M'] : ['R', 'S', 'T'];
+      const pts = isK ? L1.KLM.tri : L1.RST.tri;
+      const [D, E] = moveLine(p, ...(isK ? L1.KLM.a : L1.RST.a));
+      const tn = nm.join('');
+      B.step({
+        title: 'Dane: trójkąt ' + tn + ' i prosta a',
+        co: 'Wyznaczyć punkt przebicia <b>P</b> płaszczyzny trójkąta ' + tn + ' prostą <b>a</b> z zastosowaniem <b>transformacji</b>, a następnie widoczność.',
+        jak: 'Idea: dołożyć rzutnię, na którą płaszczyzna trójkąta rzutuje się w prostą (odcinek). Wtedy przebicie odczytamy wprost.',
+        why: 'Płaszczyzna jest rzutująca względem rzutni do niej prostopadłej. Do płaszczyzny ogólnej prostopadła jest każda rzutnia ⟂ jej poziomej.',
+        cam: 'iso',
+      });
+      const sys = monge(B);
+      tri(B, nm, pts);
+      B.mPoint('D', D, { lab: false, s: 'thin', info: 'Punkt pomocniczy prostej a' });
+      B.mPoint('E', E, { lab: false, s: 'thin', info: 'Punkt pomocniczy prostej a' });
+      B.mSeg('a', D, E, { s: 'given', name: 'a', what: 'prostej a', label: 'a' });
+      // pozioma
+      const ord = [0, 1, 2].sort((i, j) => pts[i][2] - pts[j][2]);
+      const iM = ord[1],
+        iLo = ord[0],
+        iHi = ord[2];
+      const Mv = pts[iM];
+      const tH = (Mv[2] - pts[iLo][2]) / (pts[iHi][2] - pts[iLo][2] || 1);
+      const P1 = V.lerp(pts[iLo], pts[iHi], tH);
+      const eName = nm[iLo] + nm[iHi];
+      B.step({
+        title: 'Pozioma h płaszczyzny ' + tn,
+        co: 'Pozioma <b>h</b> leżąca w płaszczyźnie trójkąta, przez wierzchołek ' + nm[iM] + '.',
+        jak: '<ol><li>h″ ∥ x<sub>12</sub> przez ' + h(nm[iM] + "''") + '; przecina ' + h(eName + "''") + ' w 1″.</li><li>Odnosząca → 1′ na ' + h(eName + "'") + '.</li><li>h′ = ' + h(nm[iM] + "'") + '1′.</li></ol>',
+        why: 'Rzutnia prostopadła do h jest prostopadła do całej płaszczyzny trójkąta (płaszczyzna zawiera h, a h ⟂ rzutni).',
+      });
+      B.mPoint('1', P1, { s: 'aux' });
+      const he = [V.add(Mv, V.mul(V.sub(Mv, P1), 0.25)), V.add(P1, V.mul(V.sub(P1, Mv), 0.25))];
+      B.mSeg('h', he[0], he[1], { s: 'aux', name: 'h', what: 'poziomej h', label: 'h', s3: 'aux' });
+      B.src(nm[iM] + '|2', eName + '|2');
+      // π4
+      const all1 = pts.concat([D, E]).map((q) => sys.toSheet('p1', q));
+      let hd = V.norm(V.sub(sys.toSheet('p1', P1), sys.toSheet('p1', Mv)));
+      if (V.dot(hd, [1, 0.6]) < 0) hd = V.mul(hd, -1);
+      const c0 = G.centroid(all1);
+      const ext1 = Math.max(...all1.map((q) => V.dot(V.sub(q, c0), hd)));
+      const a14 = V.add(c0, V.mul(hd, ext1 + p.off));
+      B.step({
+        title: 'Rzutnia π₄ ⟂ h → oś x₁₄ ⟂ h′',
+        co: 'Dołączamy <b>π<sub>4</sub></b> ⟂ π<sub>1</sub> i ⟂ h. Zostaje π<sub>1</sub>, porzucamy π<sub>2</sub>.',
+        jak: 'Oś x<sub>14</sub> prowadzimy prostopadle do h′, w dowolnym miejscu (tu ' + p.off + ' mm od rysunku).',
+        why: 'Kierunek rzutowania na π<sub>4</sub> jest równoległy do h – patrzymy wzdłuż poziomej, więc płaszczyzna trójkąta widziana jest „na ostrzu”.',
+        cam: { dir: [0.95, 0.5, 0.75] },
+      });
+      B.addPlane('p4', 4, 'p1', a14, V.perp2(hd), hd, 'p2');
+      B.src('h|1');
+      B.step({
+        title: 'Rzuty na π₄: trójkąt → odcinek, prosta → a^IV',
+        co: 'Rzutujemy ' + nm.join(', ') + ' oraz dwa punkty prostej a na π<sub>4</sub>.',
+        jak: 'Z rzutów poziomych odnoszące ⟂ x<sub>14</sub>; odkładamy wysokości z (= odległości rzutów pionowych od x<sub>12</sub>) – zielone odcinki. Trzy wierzchołki trafiają na jedną prostą.',
+        why: 'π<sub>2</sub> i π<sub>4</sub> są obie ⟂ π<sub>1</sub>, więc obie „widzą” prawdziwą wysokość punktu nad π<sub>1</sub>.',
+        cam: { obs: 'p4' },
+      });
+      pts.forEach((q, i) => {
+        B.mPoint(nm[i], q, { on: ['p4'], space: false, s: 'given' });
+        B.odn(nm[i], q, 'p1', 'p4');
+        B.transfer(nm[i], q, 'p4');
+      });
+      ['D', 'E'].forEach((n, i) => {
+        const q = i ? E : D;
+        B.mPoint(n, q, { on: ['p4'], space: false, s: 'thin', lab: false });
+        B.odn(n, q, 'p1', 'p4');
+        B.transfer(n, q, 'p4');
+      });
+      B.mSeg('a', D, E, { on: ['p4'], space: false, s: 'given', label: 'a', name: 'a' });
+      const s4 = pts.map((q) => sys.toSheet('p4', q));
+      B.a2({ t: 'pl', id: 'tri4', pts: s4, s: 'res2' });
+      B.info('tri4', 'Rzut trójkąta na π<sub>4</sub> – odcinek (płaszczyzna jest ⟂ π<sub>4</sub>)');
+      B.src(...nm.map((n) => n + '|2'), 'D|2', 'E|2');
+      const triPl = G.plane3(...pts);
+      const rP = G.segPlane(D, E, triPl);
+      if (!rP) {
+        B.data.ok = false;
+        return;
+      }
+      const P = rP.p;
+      const inside = G.pointInPoly3(P, pts, triPl.n) && rP.t >= 0 && rP.t <= 1;
+      B.data.ok = inside;
+      B.step({
+        title: 'P^IV = a^IV ∩ odcinek; rozłożenie π₄',
+        co: 'W π<sub>4</sub> punkt przebicia odczytujemy wprost: <b>P<sup>IV</sup></b> = a<sup>IV</sup> ∩ ' + h(tn + '^{IV}') + '.' + (inside ? '' : ' <b>Uwaga:</b> P leży poza trójkątem.'),
+        jak: 'Odcinek ' + h(tn + '^{IV}') + ' to cała płaszczyzna trójkąta „widziana z boku”; prosta a<sup>IV</sup> przecina ją w jednym punkcie.',
+        why: 'Wszystkie punkty płaszczyzny trójkąta mają rzuty na π<sub>4</sub> na jednej prostej; punkt prostej a leżący w tej płaszczyźnie musi więc rzutować się na tę prostą.',
+        unfold: { p4: 1 },
+        cam: { obs: 'p1' },
+      });
+      B.mPoint('P', P, { on: ['p4'], space: true, s: 'res' });
+      B.src('a|4', 'tri4');
+      B.step({
+        title: 'Powrót do π₁ i π₂: P′ i P″',
+        co: 'Odnoszącą ⟂ x<sub>14</sub> przenosimy P<sup>IV</sup> na a′ → <b>P′</b>; odnoszącą ⟂ x<sub>12</sub> → <b>P″</b> na a″.',
+        jak: 'P′ musi leżeć na a′ (punkt prostej) – odnosząca z π<sub>4</sub> wyznacza go jednoznacznie. Kontrola: odległość P″ od x<sub>12</sub> = odległość P<sup>IV</sup> od x<sub>14</sub>.',
+        why: 'Rzuty tego samego punktu na rzutnie sąsiednie leżą na wspólnej odnoszącej ⟂ ich osi – w obu układach (π<sub>1</sub>π<sub>4</sub> i π<sub>1</sub>π<sub>2</sub>).',
+        unfold: { p4: 1 },
+        cam: 'iso',
+      });
+      B.mPoint('P', P, { on: B.base, space: false, s: 'res', ray: false });
+      B.odn('P', P, 'p1', 'p4');
+      B.src('P|4', 'a|1', 'a|2');
+      lineTriVisibility(B, sys, D, E, 'a', pts, nm, P);
+      B.step({
+        title: 'Wynik',
+        co: 'Punkt przebicia <b>P</b> i widoczność prostej a. W π<sub>4</sub> od razu widać, która część a leży nad płaszczyzną trójkąta.',
+        jak: 'Kliknij przycisk „Obserwator π₄” – kamera patrzy wzdłuż h i trójkąt jest odcinkiem.',
+        why: 'Transformacja zamienia zadanie przebicia na odczytanie przecięcia dwóch prostych – to samo zadanie, co metoda płaszczyzny rzutującej, tylko „pomocnicza płaszczyzna” to teraz kierunek patrzenia.',
+        unfold: { p4: 1 },
+        cam: 'iso',
+      });
     },
   });
 
@@ -603,9 +809,14 @@
   GW.addLesson({
     id: 'm1-transformacja',
     mod: 1,
-    title: '1.3 Transformacja: rzeczywista wielkość (π₄, π₅)',
+    lista: 'L1 Z3',
+    title: '1.4 Transformacja: rzeczywista wielkość (π₄, π₅)',
     v2title: 'Transformacja układu rzutni: π₁π₂ → π₁π₄ → π₄π₅',
-    params: [].concat(xyzParams('A', 10, 35, 10), xyzParams('B', 75, 15, 50), xyzParams('C', 55, 55, 25), [{ k: 'off', l: 'odsunięcie osi', min: 6, max: 40, v: 14 }]),
+    params: [].concat(vParams('A', '1. wierzch.', L1.RST.tri[0]), vParams('B', '2. wierzch.', L1.RST.tri[1]), vParams('C', '3. wierzch.', L1.RST.tri[2]), [{ k: 'off', l: 'odsunięcie osi', min: 6, max: 40, v: 14 }]),
+    presets: [
+      { n: '📋 Lista 1 · zad. 3: trójkąt RST', v: Object.assign(vVals(['A', 'B', 'C'], L1.RST.tri), { names: 'RST' }) },
+      { n: 'Przykład: trójkąt ABC', v: Object.assign(vVals(['A', 'B', 'C'], [[10, 35, 10], [75, 15, 50], [55, 55, 25]]), { names: 'ABC' }) },
+    ],
     cams: [
       { l: 'Obserwator π₄', cam: { obs: 'p4' }, title: 'Spójrz w kierunku rzutowania na π₄' },
       { l: 'Obserwator π₅', cam: { obs: 'p5' } },
@@ -632,10 +843,10 @@
         Bq = P3(p, 'B'),
         C = P3(p, 'C');
       const pts = [A, Bq, C],
-        nm = ['A', 'B', 'C'];
+        nm = (p.names || 'RST').split('');
       B.step({
-        title: 'Dane: trójkąt ABC w π₁, π₂',
-        co: 'Trójkąt <b>ABC</b> w położeniu ogólnym. Zadanie: wyznaczyć jego <b>rzeczywistą wielkość</b>.',
+        title: 'Dane: trójkąt ' + nm.join('') + ' w π₁, π₂',
+        co: 'Trójkąt <b>' + nm.join('') + '</b> w położeniu ogólnym. Zadanie: wyznaczyć jego <b>rzeczywistą wielkość</b> z zastosowaniem transformacji.',
         jak: 'Porównaj rzuty z widokiem 3D – oba rzuty są zniekształcone (skrócone), bo płaszczyzna trójkąta nie jest równoległa do żadnej rzutni.',
         why: 'Rzut prostokątny zachowuje kształt tylko figur równoległych do rzutni. Musimy więc „dobudować” rzutnię równoległą do ABC – transformacją układu.',
         cam: 'iso',
@@ -747,8 +958,8 @@
       B.src(...nm.map((n) => n + '|1'));
       B.step({
         title: 'Rozłożenie π₅ → π₄ → π₁ i rzeczywista wielkość',
-        co: 'Trójkąt <b>A<sup>V</sup>B<sup>V</sup>C<sup>V</sup></b> jest przystający do ABC – rzeczywista wielkość.',
-        jak: 'Rzutnie rozkładają się kolejno (od najmłodszej). Boki: |AB| = ' + G.f1(V.dist(A, Bq)) + ', |BC| = ' + G.f1(V.dist(Bq, C)) + ', |CA| = ' + G.f1(V.dist(C, A)) + ' – zmierz na rysunku: zgadzają się z A<sup>V</sup>B<sup>V</sup>, B<sup>V</sup>C<sup>V</sup>, C<sup>V</sup>A<sup>V</sup>.',
+        co: 'Trójkąt <b>' + nm.map((n) => n + '<sup>V</sup>').join('') + '</b> jest przystający do ' + nm.join('') + ' – rzeczywista wielkość.',
+        jak: 'Rzutnie rozkładają się kolejno (od najmłodszej). Boki: |' + nm[0] + nm[1] + '| = ' + G.f1(V.dist(A, Bq)) + ', |' + nm[1] + nm[2] + '| = ' + G.f1(V.dist(Bq, C)) + ', |' + nm[2] + nm[0] + '| = ' + G.f1(V.dist(C, A)) + ' – zmierz miarką (📏) na rysunku: zgadzają się z bokami trójkąta w π<sub>5</sub>.',
         why: 'Figura równoległa do rzutni rzutuje się prostokątnie bez zniekształceń (wszystkie promienie mają tę samą długość). Użyj przycisków „Widok specjalny”, by powtórzyć cały proces z punktu widzenia kolejnych obserwatorów.',
         unfold: { p5: 1, p4: 1 },
         cam: { obs: 'p1' },
@@ -767,9 +978,22 @@
   GW.addLesson({
     id: 'm1-trojkaty',
     mod: 1,
-    title: '1.4 Przenikanie trójkątów',
-    v2title: 'Przenikanie trójkątów ABC i DEF',
-    params: [].concat(xyzParams('D', 18, 58, 48), xyzParams('E', 100, 40, 62), xyzParams('F', 62, 6, 4)),
+    lista: 'L1 Z4',
+    title: '1.5 Przenikanie trójkątów',
+    v2title: 'Przenikanie dwóch trójkątów',
+    params: [].concat(vParams('D', 'tr. II, 1. wierzch.', L1.ABC4[0]), vParams('E', 'tr. II, 2. wierzch.', L1.ABC4[1]), vParams('F', 'tr. II, 3. wierzch.', L1.ABC4[2])),
+    presets: [
+      { n: '📋 Lista 1 · zad. 4: trójkąty RST i ABC (krawędź MN)', v: Object.assign(vVals(['D', 'E', 'F'], L1.ABC4), { t1: L1.RST4, n1: 'RST', n2: 'ABC', rn: 'MN' }) },
+      {
+        n: 'Przykład: trójkąty ABC i DEF',
+        v: Object.assign(vVals(['D', 'E', 'F'], [[18, 58, 48], [100, 40, 62], [62, 6, 4]]), {
+          t1: [[8, 12, 14], [92, 28, 8], [48, 62, 72]],
+          n1: 'ABC',
+          n2: 'DEF',
+          rn: 'PQ',
+        }),
+      },
+    ],
     algo:
       '<ol><li>Odcinek przenikania dwóch trójkątów ma końce w <b>punktach przebicia krawędzi</b> jednego trójkąta z drugim.</li>' +
       '<li>Dla kolejnych krawędzi (obu trójkątów) wyznaczamy przebicie z płaszczyzną drugiego trójkąta metodą płaszczyzny rzutującej (jak w 1.2). Interesują nas tylko przebicia leżące <b>wewnątrz</b> trójkąta i na odcinku krawędzi.</li>' +
@@ -777,24 +1001,25 @@
       '<li><b>Widoczność</b> każdego rzutu ustalamy punktami zbieżnymi. Na odcinku PQ widoczność krawędzi zmienia się (trójkąty „przechodzą przez siebie”).</li></ol>' +
       '<p class="note">Wskazówka praktyczna: wybieraj krawędzie, których rzuty w obu rzutach nakładają się na drugi trójkąt – tylko one mogą dać przebicie wewnętrzne.</p>',
     build(p, B) {
-      const A = [8, 12, 14],
-        Bq = [92, 28, 8],
-        C = [48, 62, 72];
+      const [A, Bq, C] = p.t1 || L1.RST4;
       const D = P3(p, 'D'),
         E = P3(p, 'E'),
         F = P3(p, 'F');
+      const n1 = (p.n1 || 'RST').split(''),
+        n2 = (p.n2 || 'ABC').split(''),
+        rn = (p.rn || 'MN').split('');
       B.step({
-        title: 'Dane: trójkąty ABC i DEF',
+        title: 'Dane: trójkąty ' + n1.join('') + ' i ' + n2.join(''),
         co: 'Dwa trójkąty, które się przenikają. Szukamy odcinka przenikania i widoczności.',
         jak: 'Obejrzyj model 3D – zauważ, które krawędzie przechodzą przez drugi trójkąt.',
         why: 'Odcinek przenikania jest częścią krawędzi przecięcia płaszczyzn obu trójkątów, ograniczoną do części wspólnej obu figur.',
         cam: 'iso',
       });
       const sys = monge(B);
-      tri(B, ['A', 'B', 'C'], [A, Bq, C], { col: '#e8c060' });
-      tri(B, ['D', 'E', 'F'], [D, E, F], { col: '#7fb3e0' });
-      const T1 = { pts: [A, Bq, C], names: ['A', 'B', 'C'] },
-        T2 = { pts: [D, E, F], names: ['D', 'E', 'F'] };
+      tri(B, n1, [A, Bq, C], { col: '#e8c060' });
+      tri(B, n2, [D, E, F], { col: '#7fb3e0' });
+      const T1 = { pts: [A, Bq, C], names: n1 },
+        T2 = { pts: [D, E, F], names: n2 };
       const S1 = new G.Polyhedron([T1.pts]),
         S2 = new G.Polyhedron([T2.pts]);
       const found = [];
@@ -812,7 +1037,7 @@
           if (ok) found.push({ Ta, Tb, i, j, p: r.p });
         }
       });
-      const names = ['P', 'Q', 'R', 'S'];
+      const names = rn.concat(['R', 'S']);
       found.slice(0, 2).forEach((f, idx) => {
         const en = f.Ta.names[f.i] + f.Ta.names[f.j];
         pierce(B, sys, { A: f.Ta.pts[f.i], B: f.Ta.pts[f.j], name: en, id: en, what: 'krawędź ' + en }, f.Tb, { n1: String(1 + 2 * idx), n2: String(2 + 2 * idx), P: names[idx], eps: idx ? 'φ' : 'ε', pre: 'x' + idx });
@@ -825,13 +1050,13 @@
       const Pp = found[0].p,
         Qp = found[1].p;
       B.step({
-        title: 'Odcinek przenikania PQ',
-        co: 'Łączymy punkty <b>P</b> i <b>Q</b> – odcinek przenikania.',
-        jak: 'P′Q′ oraz P″Q″ – rzuty odcinka.',
-        why: 'P i Q należą do obu trójkątów, a część wspólna dwóch płaskich wypukłych figur leżących w różnych płaszczyznach to odcinek leżący na prostej przecięcia płaszczyzn.',
+        title: 'Krawędź przenikania ' + rn.join(''),
+        co: 'Łączymy punkty <b>' + rn[0] + '</b> i <b>' + rn[1] + '</b> – krawędź (odcinek) przenikania.',
+        jak: 'Łączymy rzuty jednoimienne punktów ' + rn[0] + ' i ' + rn[1] + ' w każdym rzucie.',
+        why: rn[0] + ' i ' + rn[1] + ' należą do obu trójkątów, a część wspólna dwóch płaskich wypukłych figur leżących w różnych płaszczyznach to odcinek leżący na prostej przecięcia płaszczyzn.',
       });
-      B.mSeg('PQ', Pp, Qp, { s: 'res', s3: 'res', name: 'PQ', what: 'odcinka przenikania' });
-      B.src('x0P', 'x1Q');
+      B.mSeg(rn.join(''), Pp, Qp, { s: 'res', s3: 'res', name: rn.join(''), what: 'odcinka przenikania' });
+      B.src('x0' + rn[0], 'x1' + rn[1]);
       // widoczność
       const faces = [
         { pts: T1.pts, pl: G.plane3(...T1.pts) },
@@ -844,20 +1069,20 @@
           edgesAll.push({ a: Tq.pts[i], b: Tq.pts[j], name: Tq.names[i] + Tq.names[j], A: Tq.pts[i], B: Tq.pts[j] });
         }
       });
-      ['p1', 'p2'].forEach((pid, idx) => {
-        const k = idx + 1,
-          ko = 2 - idx;
+      GW.mplanes(sys).forEach((pid, idx) => {
+        const k = sys.get(pid).k;
         const e1 = edgesAll.slice(0, 3),
           e2 = edgesAll.slice(3);
-        const cp = coverPoints(B, sys, pid, e2, e1, idx ? ['7', '8'] : ['5', '6'], {});
+        const cp = coverPoints(B, sys, pid, e2, e1, [['5', '6'], ['7', '8'], ['9', '10']][idx], {});
+        const ko = cp ? cp.ko : k === 1 ? 2 : 1;
         B.step({
-          title: 'Widoczność w π' + (k === 1 ? '₁' : '₂'),
-          co: 'Ustalamy widoczność krawędzi obu trójkątów w rzucie ' + (k === 1 ? 'poziomym' : 'pionowym') + '.',
+          title: 'Widoczność w rzucie ' + kName(k),
+          co: 'Ustalamy widoczność krawędzi obu trójkątów w rzucie ' + kName(k) + ' (widoczne – ciągła gruba, niewidoczne – kreskowa cienka).',
           jak: cp
-            ? 'Punkty zbieżne ' + cp.n1 + ' (na ' + cp.s1.name + ') i ' + cp.n2 + ' (na ' + cp.s2.name + '): w π<sub>' + ko + '</sub> widać, że ' + (cp.vis1 ? cp.n1 : cp.n2) + ' jest ' + (k === 1 ? 'wyżej' : 'bliżej') + ' → krawędź ' + (cp.vis1 ? cp.s1.name : cp.s2.name) + ' jest tam widoczna. Widoczność zmienia się na odcinku PQ i w miejscach przejścia przez kontur.'
+            ? 'Punkty zbieżne ' + cp.n1 + ' (na ' + cp.s1.name + ') i ' + cp.n2 + ' (na ' + cp.s2.name + '): w π<sub>' + ko + '</sub> widać, że ' + (cp.vis1 ? cp.n1 : cp.n2) + ' jest ' + (k === 1 ? 'wyżej' : k === 2 ? 'bliżej' : 'bardziej z lewej') + ' → krawędź ' + (cp.vis1 ? cp.s1.name : cp.s2.name) + ' jest tam widoczna. Widoczność zmienia się na odcinku ' + rn.join('') + ' i w miejscach przejścia przez kontur.'
             : 'Brak skrzyżowań rzutów – widoczność wynika wprost z położenia.',
           why: 'Wystarczy jedno rozstrzygnięcie na każdą „wyspę” rysunku; dalej widoczność zmienia się tylko na liniach przenikania i konturach (zasada ciągłości).',
-          cam: k === 1 ? { dir: [0.15, 0.25, 1], up: [0, -1, 0] } : { dir: [0.1, 1, 0.15] },
+          cam: visCam(k),
         });
         if (cp) addCover(B, sys, cp, 'v' + k);
         const pcs = GW.visPieces(sys, pid, edgesAll, faces);
@@ -866,7 +1091,7 @@
       });
       B.step({
         title: 'Wynik',
-        co: 'Odcinek przenikania PQ i pełna widoczność.',
+        co: 'Krawędź przenikania ' + rn.join('') + ' i pełna widoczność.',
         jak: 'Porównaj z 3D (obróć model tak, by patrzeć z góry – kliknij rzut dowolnego punktu w π<sub>1</sub>).',
         why: 'W trybie eksperymentu przesuń wierzchołki DEF – liczba i położenie przebić, wybór krawędzi oraz widoczność przeliczą się automatycznie.',
         cam: 'iso',

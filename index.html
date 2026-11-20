@@ -8,18 +8,26 @@
 </head>
 <body>
 <header id="top">
-  <div class="brand">GW · Geometria wykreślna i grafika inżynierska</div>
+  <div class="brand">GW · Geometria wykreślna</div>
   <nav id="mods"></nav>
+  <div class="tools">
+    <button id="bQuiz" title="Rozwiąż sam: wskazujesz punkty kolejnych kroków, aplikacja ocenia (R)">🎯 Rozwiąż sam</button>
+    <button id="bPaper" title="Tryb kartki – rysunek jak na kolokwium, czarno-biały (K)">📄 Kartka</button>
+    <button id="bCheat" title="Ściągawka – teoria w pigułce (T)">📖 Ściągawka</button>
+    <button id="bKeys" title="Skróty klawiszowe">⌨</button>
+  </div>
 </header>
 <div id="lessonbar"></div>
+<div id="tabs"><button data-tab="side" class="on">Opis kroku</button><button data-tab="v3">Model 3D</button><button data-tab="v2">Rysunek 2D</button></div>
 <main id="main">
   <aside id="side">
     <div id="ctrl">
-      <button id="bPrev" title="Strzałka w lewo">◀ Poprzedni krok</button>
+      <button id="bPrev" title="Strzałka w lewo">◀ Poprzedni</button>
       <button id="bPlay" title="Spacja">▶</button>
-      <button id="bNext" title="Strzałka w prawo">Następny krok ▶</button>
+      <button id="bNext" title="Strzałka w prawo">Następny ▶</button>
     </div>
     <div id="timeline"></div>
+    <div id="quizBox"></div>
     <div id="stepBox">
       <div id="stepHead"><span id="stepNo"></span><b id="stepTitle"></b></div>
       <div class="layer co"><h4>CO kreślimy?</h4><div id="sCo"></div></div>
@@ -28,9 +36,12 @@
     </div>
     <details id="specBox" open><summary>Widok specjalny</summary><div id="special"></div></details>
     <details id="expBox" open><summary>Tryb eksperymentu – „Co jeśli?”</summary><div id="params"></div></details>
+    <details id="viewBox"><summary>Filtry widoku i rzutnie (F)</summary><div id="viewopts"></div></details>
+    <details id="mistBox"><summary>⚠ Typowe błędy na kolokwium</summary><div id="mistakes"></div></details>
     <details id="algoBox"><summary>Uniwersalny algorytm (metodyka)</summary><div id="algo"></div></details>
     <div id="legend"></div>
   </aside>
+  <div class="gutter" title="Przeciągnij, aby zmienić szerokość (dwuklik – domyślnie)"></div>
   <section id="v3wrap" class="view">
     <div class="vbar">
       <b>Przestrzeń 3D</b>
@@ -40,15 +51,18 @@
       <button data-cam="side">Z boku</button>
       <span id="camExtra"></span>
       <span id="unfoldBox"><label>Rozkładanie rzutni <input type="range" id="unfold" min="0" max="1" step="0.01" value="0"></label><span id="unfoldTxt"></span></span>
+      <span id="zsBox" title="Przewyższenie: skala pionowa modelu 3D (rysunek 2D bez zmian)">przewyższenie <input type="range" id="zs" min="1" max="15" step="0.5" value="1"><span id="zsTxt"></span><button id="zsAuto">auto</button></span>
     </div>
     <div id="v3" class="vbody"></div>
   </section>
+  <div class="gutter" title="Przeciągnij, aby zmienić szerokość (dwuklik – domyślnie)"></div>
   <section id="v2wrap" class="view">
-    <div class="vbar"><b id="v2title">Rysunek 2D</b><button id="bFit">Dopasuj</button><span class="hint">kółko – zoom, przeciągnij – przesuń</span></div>
+    <div class="vbar"><b id="v2title">Rysunek 2D</b><button id="bFit" title="D">Dopasuj</button><button id="bMeasure" title="Miarka: kliknij dwa punkty (M)">📏 Miarka</button><span class="lay"><button data-lay="1" title="tylko 3D (1)">3D</button><button data-lay="3" title="oba widoki (3)">3D|2D</button><button data-lay="2" title="tylko 2D (2)">2D</button></span><span class="hint">kółko – zoom, przeciągnij – przesuń</span></div>
     <div id="v2" class="vbody"></div>
   </section>
 </main>
 <div id="tip"></div>
+<div id="cheat"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -56,6 +70,7 @@
 <script src="js/core.js"></script>
 <script src="js/view3d.js"></script>
 <script src="js/view2d.js"></script>
+<script src="js/teoria.js"></script>
 <script src="js/lessons/m1.js"></script>
 <script src="js/lessons/m2.js"></script>
 <script src="js/lessons/m3.js"></script>

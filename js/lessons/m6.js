@@ -539,4 +539,269 @@
       });
     },
   });
+
+  /* =================================================================
+     6.4 Perspektywa czołowa z rzutów prostokątnych (Lista 6; wykład)
+         metoda punktu głównego O^τ i punktu odległości G
+     ================================================================= */
+  const bxT = (x0, x1, t0, t1, z0, z1) => G.box(x0, x1, -t1, -t0, z0, z1);
+  const PV = {
+    L6Z1: { n: '📋 Lista 6 · zad. 1: wielokąt (L) na podstawie, h = 30, δ = 90', poly: [[20, 10], [70, 10], [70, 50], [100, 50], [100, 80], [20, 80]], h: 30, d: 90, gs: 1 },
+    L6Z2: { n: '📋 Lista 6 · zad. 2: bryła (ostrosłup klinowy), h = 40, δ = 90', parts: () => [G.pyramid([[-30, -10, 0], [70, -10, 0], [70, -60, 0], [-30, -60, 0]], [70, -10, 80])], h: 40, d: 90, gs: 1 },
+    L6Z3: { n: '📋 Lista 6 · zad. 3: dwa prostopadłościany, h = 40, δ = 90', parts: () => [bxT(-90, -50, 20, 40, 0, 80), bxT(-90, -50, 60, 80, 0, 80)], h: 40, d: 90, gs: -1 },
+    L6Z4: { n: '📋 Lista 6 · zad. 4: bryła z otworem, h = 40, δ = 90', parts: () => [bxT(40, 60, 10, 50, 0, 80), bxT(95, 135, 10, 50, 0, 80), bxT(60, 95, 10, 50, 0, 20), bxT(60, 95, 10, 50, 60, 80)], h: 40, d: 90, gs: -1 },
+    W1: { n: 'Wykład: prostokąt 30 + 70 × 50 (na tle), h = 40, δ = 90', poly: [[-30, 0], [70, 0], [70, 50], [-30, 50]], h: 40, d: 90, gs: 1 },
+    W2: { n: 'Wykład B: prostokąt 100 × 50 (15 za tłem), h = 35, δ = 90', poly: [[25, 15], [125, 15], [125, 65], [25, 65]], h: 35, d: 90, gs: 1 },
+    W3: { n: 'Wykład A: wielokąt L (10/25/15, 10/40/30), h = 30, δ = 90', poly: [[10, 10], [35, 10], [35, 50], [50, 50], [50, 80], [10, 80]], h: 30, d: 90, gs: 1 },
+    W4: { n: 'Wykład: wielościan „⊐” z rzutów, h = 30, δ = 70', parts: () => [bxT(-50, -30, 10, 45, 0, 75), bxT(-100, -50, 10, 45, 0, 20), bxT(-100, -50, 10, 45, 55, 75)], h: 30, d: 70, gs: -1 },
+  };
+  GW.addLesson({
+    id: 'm6-rzuty',
+    mod: 6,
+    lista: 'L6 Z1–4',
+    title: '6.4 Perspektywa czołowa z rzutów prostokątnych (O^τ, G)',
+    v2title: 'Rzuty prostokątne (góra) i perspektywa (dół)',
+    opts: [
+      { k: 'set', l: 'Zadanie', choices: Object.keys(PV).map((k) => [k, PV[k].n]), v: 'L6Z1', rebuildFrame: true },
+      {
+        k: 'gs',
+        l: 'Punkt odległości G',
+        choices: [
+          ['auto', 'jak w zadaniu'],
+          ['1', 'po prawej stronie O^τ'],
+          ['-1', 'po lewej stronie O^τ'],
+        ],
+        v: 'auto',
+      },
+    ],
+    params: [
+      { k: 'dh', l: 'zmiana wysokości horyzontu h', min: -20, max: 40, v: 0 },
+      { k: 'dd', l: 'zmiana głębokości tłowej δ', min: -40, max: 60, v: 0 },
+      { k: 'gx', l: 'przesunięcie stanowiska g′', min: -40, max: 40, v: 0 },
+    ],
+    cams: [
+      { l: '👁 Widok z oka', cam: (c) => ({ dir: [0, 1, 0], target: [c.data.O[0], 0, c.data.O[2]], dist: c.data.O[1], fov: 70 }), title: 'Kamera w oku – obraz pokrywa się z bryłą' },
+      { l: 'Z boku aparatu', cam: { dir: [1, 0.55, 0.45] } },
+    ],
+    mistakes: ['Głębokość t odkładamy na p od punktu T w stronę <b>przeciwną</b> do G (G po prawej → odkładamy w lewo).', 'Wysokości odkładamy <b>na tle</b> (w punkcie T, w prawdziwej wielkości), a dopiero potem prowadzimy do O<sup>τ</sup>.', 'Odległość O<sup>τ</sup> od p to wysokość horyzontu h, a odległość G od O<sup>τ</sup> to głębokość tłowa δ – nie myl ich.'],
+    algo:
+      '<ol><li><b>Aparat</b>: podstawa tła p, horyzont h (w odległości h od p), punkt główny <b>O<sup>τ</sup></b> nad stanowiskiem g′, punkt odległości <b>G</b> na h w odległości δ od O<sup>τ</sup>.</li>' +
+      '<li><b>Punkt podstawy A</b> (odległość x od g′, głębokość t za τ′): z rzutu poziomego przenosimy x na p → <b>T</b>; prosta T–O<sup>τ</sup> to perspektywa prostej ⟂ tła przez A.</li>' +
+      '<li>Od T odkładamy na p głębokość t w stronę przeciwną do G → <b>M</b>; prosta M–G (obraz prostej pod 45° do tła) przecina T–O<sup>τ</sup> w <b>A<sup>s</sup></b>.</li>' +
+      '<li><b>Wysokość</b> z: na tle w punkcie T odkładamy prawdziwą wysokość (T<sub>z</sub>), prosta T<sub>z</sub>–O<sup>τ</sup>; pion z A<sup>s</sup> wyznacza punkt na wysokości z.</li>' +
+      '<li>Łączymy punkty w krawędzie, ustalamy widoczność (z oka).</li></ol>',
+    build(p, B) {
+      const cfg = PV[p.set] || PV.L6Z1;
+      const hh = cfg.h + (p.dh || 0),
+        dd = cfg.d + (p.dd || 0);
+      const gs = p.gs === 'auto' ? cfg.gs : +p.gs;
+      const gx = p.gx || 0;
+      const S = setup({ ox: gx, d: dd, hgt: hh });
+      const O = S.O;
+      let U = null,
+        creases,
+        verts3;
+      if (cfg.parts) {
+        U = new G.Union(cfg.parts());
+        creases = U.creaseEdges();
+      } else {
+        const P = cfg.poly.map((q) => [q[0], -q[1], 0]);
+        creases = P.map((a, i) => ({ a, b: P[(i + 1) % P.length] }));
+      }
+      verts3 = G.dedupe([].concat(...creases.map((e) => [e.a, e.b])), 1e-6);
+      const xs = verts3.map((q) => q[0]),
+        ts = verts3.map((q) => -q[1]),
+        zs = verts3.map((q) => q[2]);
+      const xmin = Math.min(gx, ...xs),
+        xmax = Math.max(gx, ...xs),
+        tmax = Math.max(...ts),
+        zmax = Math.max(0, ...zs);
+      // układ arkusza
+      const Yt = 0;
+      const Yf = Yt - tmax - 16;
+      const Yh = Yt + 22,
+        Yp = Yh + hh;
+      const Xs = xmax + 22;
+      const plan = (P) => [P[0], Yt + P[1]];
+      const front = (P) => [P[0], Yf - P[2]];
+      const side = (P) => [Xs + tmax + P[1], Yf - P[2]];
+      const img = (P) => {
+        const q = S.persp(P);
+        return [q[0], Yp - q[1]];
+      };
+      const Ot = [gx, Yh],
+        Gp = [gx + gs * dd, Yh];
+      const fitX = [Math.min(xmin, Gp[0], gx - 10) - 12, Math.max(xmax, Gp[0], Xs + tmax + 5) + 12];
+      B.frame2 = [fitX[0], (zmax ? Yf - zmax : Yt - tmax) - 14, fitX[1], Yp + 18];
+      B.data = { O, verts: verts3 };
+      B.step({
+        title: 'Dane: rzuty prostokątne, τ′, g′, h = ' + G.f0(hh) + ', δ = ' + G.f0(dd),
+        co: cfg.n.replace('📋 ', '') + '. Dane są rzuty prostokątne (wymiary w mm), ślad tła <b>τ′</b>, stanowisko <b>g′</b>, wysokość horyzontu <b>h = ' + G.f0(hh) + '</b> i głębokość tłowa <b>δ = ' + G.f0(dd) + '</b>.',
+        jak: 'Rzut poziomy leży nad τ′ (obiekt za tłem). Odległości x mierzymy od g′, głębokości t – od τ′.',
+        why: 'W perspektywie czołowej tło jest równoległe do frontu obiektu – krawędzie ∥ tła zachowują kierunek, a krawędzie ⟂ tła zbiegają się w punkcie głównym.',
+        cam: { dir: [0.9, 0.7, 0.55] },
+      });
+      // 2D: rzuty prostokątne
+      const viewEdges = (dir, map, id, label) => {
+        const pcs = U ? G.hlr(creases, U.faces(), { dir }) : creases.map((e) => ({ a: e.a, b: e.b, st: 'vis' }));
+        pcs.forEach((pc) => B.a2({ t: 'seg', id, a: map(pc.a), b: map(pc.b), s: pc.st === 'vis' ? 'given' : 'hid' }));
+        B.info(id, label);
+      };
+      viewEdges([0, 0, 1], plan, 'plan', 'Rzut poziomy obiektu (nad śladem tła τ′)');
+      if (zmax > 0) {
+        viewEdges([0, 1, 0], front, 'front', 'Rzut pionowy (z przodu)');
+        viewEdges([-1, 0, 0], side, 'side', 'Rzut boczny (z lewej)');
+        B.a2({ t: 'seg', id: 'xax', a: [fitX[0] + 4, Yf], b: [xmax + 8, Yf], s: 'thin', label: 'x', labelAt: 0.02 });
+        B.a2({ t: 'seg', id: 'xax', a: [Xs - 4, Yf], b: [Xs + tmax + 8, Yf], s: 'thin' });
+      }
+      B.a2({ t: 'seg', id: 'tau1', a: [fitX[0] + 2, Yt], b: [Math.max(xmax, gx) + 14, Yt], s: 'given', label: "τ'", labelAt: 0.97 });
+      B.info('tau1', 'τ′ – ślad tła na rzucie poziomym');
+      B.a2({ t: 'arrow', id: 'g1', a: [gx, Yt + 13], b: [gx, Yt + 2], s: 'given' });
+      B.a2({ t: 'text', id: 'g1', p: [gx + 5, Yt + 10], txt: "g'", s: 'note' });
+      B.info('g1', 'g′ – stanowisko obserwatora (rzut oka; oko jest w odległości δ przed tłem)');
+      // 3D: aparat
+      const x0 = fitX[0],
+        x1 = fitX[1];
+      B.a3({ t: 'poly', id: 'pi', pts: [[x0, -tmax - 20, 0], [x1, -tmax - 20, 0], [x1, dd + 10, 0], [x0, dd + 10, 0]], col: '#9ec29a', op: 0.14, edge: true, noFit: true });
+      B.info('pi', 'Podstawa π');
+      B.a3({ t: 'poly', id: 'tau', pts: [[x0, 0, 0], [x1, 0, 0], [x1, 0, Math.max(hh, zmax) + 20], [x0, 0, Math.max(hh, zmax) + 20]], col: '#9fd3ff', op: 0.2, edge: true, edgeCol: 0x2a6fdb, labelP: [x0 + 3, 0, Math.max(hh, zmax) + 20], label: 'τ' });
+      B.info('tau', 'Tło τ (pionowa rzutnia perspektywy)');
+      B.a3({ t: 'pt', id: 'O', p: O, s: 'eye', label: 'O', r: 1.3 });
+      B.a3({ t: 'seg', id: 'O', a: [O[0], O[1], 0], b: O, s: 'thin' });
+      B.a3({ t: 'seg', id: 'Ot', a: O, b: [O[0], 0, O[2]], s: 'eye', w: 0.6 });
+      B.info('O', 'Oko O: wysokość h = ' + G.f0(hh) + ', odległość od tła δ = ' + G.f0(dd));
+      if (U) U.parts.forEach((pp) => pp.faces.forEach((f) => B.a3({ t: 'poly', id: 'solid', pts: f, col: '#e8c060', op: 0.45 })));
+      creases.forEach((e) => B.a3({ t: 'seg', id: 'solidE', a: e.a, b: e.b, s: 'proj' }));
+      if (!U) B.a3({ t: 'poly', id: 'solid', pts: creases.map((e) => e.a), col: '#e8c060', op: 0.55 });
+      B.info('solid', 'Obiekt za tłem');
+      // aparat 2D
+      B.step({
+        title: 'Aparat: p, h, O^τ i punkt odległości G',
+        co: 'Rysujemy podstawę tła <b>p</b>, horyzont <b>h</b> w odległości ' + G.f0(hh) + ' nad p, punkt główny <b>O<sup>τ</sup></b> (pod g′, na h) i <b>punkt odległości G</b> w odległości δ = ' + G.f0(dd) + ' od O<sup>τ</sup> (' + (gs > 0 ? 'po prawej' : 'po lewej') + ').',
+        jak: 'p i h są równoległe do τ′. Współrzędne x przenosimy z rzutu poziomego pionowymi odnoszącymi (g′ → O<sup>τ</sup>).',
+        why: 'O<sup>τ</sup> to zbieg prostych ⟂ tła (spodek prostopadłej z oka na tło). G to zbieg prostych poziomych nachylonych pod 45° do tła – leży na horyzoncie w odległości δ, bo promień z oka pod 45° przebija tło po przebyciu δ w bok.',
+        cam: { dir: [0.9, 0.7, 0.55] },
+      });
+      B.a2({ t: 'seg', id: 'p', a: [fitX[0] + 2, Yp], b: [fitX[1] - 2, Yp], s: 'given', label: 'p', labelAt: 0.02 });
+      B.a2({ t: 'seg', id: 'h', a: [fitX[0] + 2, Yh], b: [fitX[1] - 2, Yh], s: 'aux', label: 'h', labelAt: 0.02 });
+      B.a2({ t: 'pt', id: 'Ot', p: Ot, s: 'eye', label: 'O^τ', r: 3 });
+      B.a2({ t: 'pt', id: 'G', p: Gp, s: 'eye', label: 'G', r: 3 });
+      B.a2({ t: 'seg', id: 'gOt', a: [gx, Yt + 2], b: Ot, s: 'odn' });
+      B.a2({ t: 'seg', id: 'dimh', a: [fitX[1] - 6, Yp], b: [fitX[1] - 6, Yh], s: 'dist', label: 'h', labelAt: 0.5 });
+      B.a2({ t: 'seg', id: 'dimd', a: [Ot[0], Yh - 4], b: [Gp[0], Yh - 4], s: 'dist', label: 'δ', labelAt: 0.5 });
+      B.info('p', 'Podstawa tła p = τ ∩ π');
+      B.info('h', 'Horyzont h – na wysokości oka');
+      B.info('Ot', 'Punkt główny O<sup>τ</sup> – zbieg prostych prostopadłych do tła');
+      B.info('G', 'Punkt odległości G – zbieg prostych poziomych pod 45° do tła; |O<sup>τ</sup>G| = δ');
+      B.a3({ t: 'seg', id: 'p', a: [x0, 0, 0], b: [x1, 0, 0], s: 'given', label: 'p', labelAt: 0.98 });
+      B.a3({ t: 'seg', id: 'h', a: [x0, 0.05, hh], b: [x1, 0.05, hh], s: 'aux', label: 'h', labelAt: 0.98 });
+      B.a3({ t: 'pt', id: 'Ot', p: [O[0], 0.05, hh], s: 'eye', label: 'O^τ', small: true });
+      B.a3({ t: 'pt', id: 'G', p: [O[0] + gs * dd, 0.05, hh], s: 'eye', label: 'G', small: true });
+      B.a3({ t: 'seg', id: 'G', a: O, b: [O[0] + gs * dd, 0, hh], s: 'eye', w: 0.5 });
+      // punkty podstawy (rzuty poziome wierzchołków)
+      const foot = G.dedupe(verts3.map((q) => [q[0], q[1], 0]), 1e-6);
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      const fname = (P) => letters[foot.findIndex((q) => Math.abs(q[0] - P[0]) < 1e-6 && Math.abs(q[1] - P[1]) < 1e-6)] || '?';
+      B.step({
+        title: 'Punkty podstawy: proste ⟂ tła → O^τ',
+        co: 'Dla każdego punktu rzutu poziomego (' + foot.map(fname).join(', ') + ') przenosimy jego x na p (punkt T) i łączymy T z O<sup>τ</sup>.',
+        jak: 'W rzucie poziomym prowadzimy z punktu prostą ⟂ τ′ do τ′; odnoszącą pionową przenosimy na p.',
+        why: 'Prosta prostopadła do tła przechodzi przez punkt i przebija tło w T (rzeczywiste położenie na p); jej perspektywa zbiega się w O<sup>τ</sup>.',
+        cam: { dir: [0.75, 0.75, 0.6] },
+      });
+      foot.forEach((P) => {
+        const n = fname(P);
+        const id = 'f' + n;
+        B.a2({ t: 'pt', id: id + 'p', p: plan(P), s: 'given', r: 2, label: n + "'" });
+        B.a2({ t: 'seg', id: id + 'o', a: plan(P), b: [P[0], Yp], s: 'odn' });
+        B.a2({ t: 'pt', id: id + 'T', p: [P[0], Yp], s: 'aux', r: 1.8 });
+        B.a2({ t: 'seg', id: id + 'l', a: [P[0], Yp], b: Ot, s: 'thin' });
+        B.info(id + 'o', 'Odnosząca z rzutu poziomego ' + n + '′ na p (punkt T<sub>' + n + '</sub>)');
+        B.info(id + 'l', 'T<sub>' + n + '</sub>–O<sup>τ</sup>: perspektywa prostej ⟂ tła przez ' + n);
+        B.a3({ t: 'seg', id: id + 'l', a: [P[0], 0, 0], b: P, s: 'thin' });
+      });
+      B.step({
+        title: 'Głębokość przez punkt odległości G',
+        co: 'Od T odkładamy na p głębokość t (odległość punktu od τ′) w stronę ' + (gs > 0 ? 'lewą' : 'prawą') + ' → M; prosta M–G przecina T–O<sup>τ</sup> w punkcie perspektywy.',
+        jak: 'Odcinek |TM| = t przenosimy cyrklem z rzutu poziomego (od punktu do τ′). Punkty podstawy łączymy w perspektywę rzutu poziomego.',
+        why: 'Prosta pozioma pod 45° do tła przez punkt A przebija tło w M, odległym od T dokładnie o t (trójkąt prostokątny równoramienny w rzucie poziomym). Jej perspektywa zbiega się w G – stąd przecięcie z T–O<sup>τ</sup> daje A<sup>s</sup>.',
+        cam: { dir: [0.75, 0.75, 0.6] },
+      });
+      const footImg = {};
+      foot.forEach((P) => {
+        const n = fname(P);
+        const id = 'f' + n;
+        const t = -P[1];
+        const Mx = P[0] - gs * t;
+        const As = img(P);
+        footImg[n] = As;
+        if (t > 1e-6) {
+          B.a2({ t: 'seg', id: id + 'd', a: [P[0], Yp + 1.5], b: [Mx, Yp + 1.5], s: 'dist' });
+          B.a2({ t: 'pt', id: id + 'M', p: [Mx, Yp], s: 'aux', r: 1.8 });
+          B.a2({ t: 'seg', id: id + 'g', a: [Mx, Yp], b: As, s: 'aux', w: 0.8 });
+          B.a2({ t: 'seg', id: id + 'g', a: As, b: Gp, s: 'thin' });
+          B.info(id + 'd', 'Głębokość t = ' + G.f0(t) + ' odłożona na p od T<sub>' + n + '</sub>');
+          B.info(id + 'g', 'Prosta M–G: perspektywa prostej pod 45° do tła przez ' + n);
+          B.a3({ t: 'seg', id: id + 'g', a: [Mx, 0, 0], b: P, s: 'aux', w: 0.6 });
+        }
+        B.a2({ t: 'pt', id: id + 's', p: As, s: 'res', label: n + '^s', r: 2.6 });
+        B.info(id + 's', h(n + '^s') + ' – perspektywa punktu ' + n + ' podstawy (t = ' + G.f0(t) + ', x = ' + G.f0(P[0] - gx) + ' od g′)');
+        B.a3({ t: 'pt', id: id + 's', p: S.onGlass(P), s: 'res', small: true });
+        B.a3({ t: 'seg', id: id + 'r', a: O, b: P, s: 'ray', op: 0.4 });
+      });
+      const baseEdges = creases.filter((e) => Math.abs(e.a[2]) < 1e-6 && Math.abs(e.b[2]) < 1e-6);
+      baseEdges.forEach((e) => B.a2({ t: 'seg', id: 'base', a: img(e.a), b: img(e.b), s: zmax ? 'aux2' : 'res' }));
+      B.info('base', 'Perspektywa podstawy (rzutu poziomego)');
+      // wysokości
+      const up = verts3.filter((q) => q[2] > 1e-6);
+      if (up.length) {
+        const levels = [...new Set(up.map((q) => q[2]))].sort((a, b) => a - b);
+        B.step({
+          title: 'Wysokości: odkładamy na tle i prowadzimy do O^τ',
+          co: 'Wysokości (' + levels.map(G.f0).join(', ') + ') odkładamy na tle w prawdziwej wielkości w punktach T, łączymy z O<sup>τ</sup> i przecinamy z pionami z punktów podstawy.',
+          jak: 'Pionowe krawędzie pozostają pionowe (są ∥ tła). Na tle (w T) wysokość jest prawdziwa; prosta T<sub>z</sub>–O<sup>τ</sup> to perspektywa poziomej prostej ⟂ tła na wysokości z.',
+          why: 'Tylko na tle obraz ma prawdziwe wymiary – za tłem wszystko się zmniejsza proporcjonalnie do s = δ/(δ + t).',
+          cam: { dir: [0.75, 0.75, 0.6] },
+        });
+        up.forEach((P) => {
+          const n = fname(P);
+          const lvl = levels.indexOf(P[2]) + 1;
+          const nm = n + '_' + lvl;
+          const id = 'u' + n + lvl;
+          const Tz = [P[0], Yp - P[2]];
+          const Ps = img(P);
+          B.a2({ t: 'seg', id: id + 'h', a: [P[0], Yp], b: Tz, s: 'dist' });
+          B.a2({ t: 'seg', id: id + 'l', a: Tz, b: Ot, s: 'thin' });
+          B.a2({ t: 'seg', id: id + 'v', a: footImg[n], b: Ps, s: 'aux', w: 0.8 });
+          B.a2({ t: 'pt', id: id + 's', p: Ps, s: 'res', label: nm + '^s', r: 2.4 });
+          B.info(id + 'h', 'Wysokość z = ' + G.f0(P[2]) + ' odłożona na tle w T<sub>' + n + '</sub> (prawdziwa wielkość)');
+          B.info(id + 's', h(nm + '^s') + ' – perspektywa wierzchołka na wysokości ' + G.f0(P[2]));
+          B.a3({ t: 'pt', id: id + 's', p: S.onGlass(P), s: 'res', small: true });
+        });
+      }
+      // krawędzie i widoczność
+      B.step({
+        title: 'Krawędzie i widoczność',
+        co: 'Łączymy punkty w krawędzie; krawędzie widoczne z oka – grubo, niewidoczne – kreskowo cienko.',
+        jak: 'Pomocnicze linie konstrukcyjne można już pominąć (filtr „Bez konstrukcji”).',
+        why: 'Widoczność ustalamy tak, jak widzi oko: promień od oka do punktu krawędzi nie może przebić żadnej ściany.',
+        cam: { dir: [0.6, 0.9, 0.5] },
+      });
+      B.endWhere((q) => /^f.*[olgdM]$/.test(q.id) || /^u.*[hlv]$/.test(q.id) || q.id === 'base');
+      const pcs = U ? G.hlr(creases, U.faces(), { eye: O }) : creases.map((e) => ({ a: e.a, b: e.b, st: 'vis' }));
+      pcs.forEach((pc) => {
+        B.a2({ t: 'seg', id: 'res', a: img(pc.a), b: img(pc.b), s: pc.st === 'vis' ? 'vis' : 'hid' });
+        B.a3({ t: 'seg', id: 'res', a: S.onGlass(pc.a), b: S.onGlass(pc.b), s: pc.st === 'vis' ? 'res' : 'hid' });
+      });
+      B.info('res', 'Krawędź w perspektywie (widoczność z oka)');
+      B.step({
+        title: 'Wynik',
+        co: 'Perspektywa czołowa obiektu. Kliknij „👁 Widok z oka” nad widokiem 3D – obraz na tle pokrywa się z bryłą.',
+        jak: 'Zmień h, δ lub położenie g′ suwakami – zobacz, jak zmienia się obraz (wysoki horyzont = widok z góry, mała δ = silne zbieganie).',
+        why: 'Perspektywa zachowuje współliniowość, ale nie równoległość krawędzi ⟂ tła ani stosunku długości.',
+        cam: { dir: [0.6, 0.9, 0.5] },
+      });
+      B.data.ok = true;
+    },
+  });
 })();

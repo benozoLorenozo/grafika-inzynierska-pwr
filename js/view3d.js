@@ -69,6 +69,8 @@
       this.Utarget = null;
       this.sys = null;
       this.unit = 1;
+      this.zs = 1;
+      this.solidOp = 1;
       this.center = [0, 0, 0];
       this.radius = 80;
       this.sphereG = new THREE.SphereGeometry(1, 14, 10);
@@ -165,16 +167,16 @@
         const m = new THREE.MeshLambertMaterial({ color: p.col ?? st.c });
         o = new THREE.Mesh(this.sphereG, m);
         const r = (p.small ? 0.75 : 1.05) * u * (p.r || 1);
-        o.scale.setScalar(r);
         o.userData.r = r;
+        this.ptScale(o, 1);
         o.position.copy(T(p.p));
         o.userData.kind = 'pt';
         o.userData.prio = 3;
       } else if (p.t === 'seg' || p.t === 'pl') {
         const pts = p.t === 'seg' ? [p.a, p.b] : p.closed ? p.pts.concat([p.pts[0]]) : p.pts;
         const rr = (p.w || 1) * (st.r || 0.1) * u;
-        if (pts.length > 24 && !st.dash && !p.dash) {
-          if ((st.r || 0) <= 0.16) {
+        if ((pts.length > 24 || this.zs > 1.5) && !st.dash && !p.dash) {
+          if ((st.r || 0) <= 0.16 || this.zs > 1.5) {
             const g = new THREE.BufferGeometry().setFromPoints(pts.map(T));
             o = new THREE.Line(g, new THREE.LineBasicMaterial({ color: p.col ?? st.c, transparent: true, opacity: p.op ?? 0.9 }));
             o.userData.kind = 'line';
@@ -259,10 +261,16 @@
       }
       if (!o) return null;
       o.userData.prim = p;
+      const sol = this.solidOp !== 1 && GW.catOf(p) === 'solids';
       o.traverse((c) => {
         c.userData.prim = p;
         if (c.material && !c.userData.base) {
           c.userData.baseCol = c.material.color ? c.material.color.clone() : null;
+          if (sol && c.isMesh) {
+            c.material.opacity = Math.min(1, c.material.opacity * this.solidOp);
+            c.material.transparent = c.material.opacity < 0.999;
+            c.material.depthWrite = c.material.opacity > 0.95;
+          }
           c.userData.baseOp = c.material.opacity;
         }
       });
@@ -324,8 +332,26 @@
         mx = [-1e9, -1e9, -1e9];
       pts.forEach((p) => p.forEach((v, i) => ((mn[i] = Math.min(mn[i], v)), (mx[i] = Math.max(mx[i], v)))));
       this.center = V.mid(mn, mx);
-      this.radius = Math.max(10, V.dist(mn, mx) / 2);
+      const smn = [mn[0], mn[1], mn[2] * this.zs],
+        smx = [mx[0], mx[1], mx[2] * this.zs];
+      this.radius = Math.max(10, V.dist(smn, smx) / 2);
       this.unit = this.radius / 75;
+    }
+    /* punkt GW -> świat Three (z uwzględnieniem przewyższenia) */
+    W(p) {
+      return new THREE.Vector3(p[0], p[2] * this.zs, p[1]);
+    }
+    ptScale(o, k) {
+      const r = o.userData.r * k;
+      o.scale.set(r, r / this.zs, r);
+    }
+    setZScale(s) {
+      this.zs = s;
+      this.root.scale.set(1, s, 1);
+      this.root.updateMatrixWorld(true);
+      this.objs.concat(this.ovObjs).forEach((o) => {
+        if (o.userData.kind === 'pt') this.ptScale(o, this.hl.has(o.userData.prim.id) ? 1.7 : 1);
+      });
     }
     /* ---------- podświetlanie ---------- */
     setHighlight(set) {
@@ -352,7 +378,7 @@
           }
         });
         const k = on ? 1.7 : 1;
-        if (o.userData.kind === 'pt') o.scale.setScalar(o.userData.r * k);
+        if (o.userData.kind === 'pt') this.ptScale(o, k);
         if (o.userData.kind === 'cyl')
           o.children.forEach((c) => {
             c.scale.x = c.scale.z = c.userData.r * k;
@@ -421,14 +447,15 @@
       const vh = Math.tan(((fov / 2) * Math.PI) / 180);
       const hh = vh * Math.max(0.3, this.camera.aspect || 1);
       const dist = spec.dist || ((this.radius * (spec.zoom || 1)) / Math.min(vh, hh)) * 1.25;
-      const pos = V.add(target, V.mul(dir, dist));
+      const tW = this.W(target);
+      const pW = tW.clone().add(T(dir).normalize().multiplyScalar(dist));
       const up = spec.up ? T(spec.up).normalize() : new THREE.Vector3(0, 1, 0);
       const go = {
         p0: this.camera.position.clone(),
         t0: this.controls.target.clone(),
         u0: this.camera.up.clone(),
-        p1: T(pos),
-        t1: T(target),
+        p1: pW,
+        t1: tW,
         u1: up,
         start: performance.now(),
         dur: animate ? 900 : 1,
@@ -532,7 +559,7 @@
           const f = Math.min(1, (now - b) / 700);
           const ease = 1 - Math.pow(1 - f, 3);
           const k = o.userData.kind;
-          if (k === 'pt') o.scale.setScalar(o.userData.r * (f < 1 ? 0.2 + 1.4 * Math.sin(ease * Math.PI * 0.75) : 1) * (this.hl.has(o.userData.prim.id) ? 1.7 : 1));
+          if (k === 'pt') this.ptScale(o, (f < 1 ? 0.2 + 1.4 * Math.sin(ease * Math.PI * 0.75) : 1) * (this.hl.has(o.userData.prim.id) ? 1.7 : 1));
           else if (k === 'cyl') o.children.forEach((c) => (c.scale.y = Math.max(1e-6, c.userData.len * ease)));
           else
             o.traverse((c) => {
@@ -576,7 +603,7 @@
     }
     /* rzut punktu GW na ekran (px) – do overlayów */
     screenOf(P) {
-      const v = T(P).project(this.camera);
+      const v = T(P).applyMatrix4(this.root.matrixWorld).project(this.camera);
       return [(v.x * 0.5 + 0.5) * this.el.clientWidth, (-v.y * 0.5 + 0.5) * this.el.clientHeight];
     }
   }

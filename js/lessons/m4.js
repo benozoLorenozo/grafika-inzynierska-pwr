@@ -30,12 +30,20 @@
       n = 'Dimetria prostokątna';
       angs = [7 + 10 / 60, 41 + 25 / 60];
       orto = true;
+    } else if (type === 'woj') {
+      ex = [Math.cos(d2r(45)), -Math.sin(d2r(45))];
+      ey = [-Math.cos(d2r(45)), -Math.sin(d2r(45))];
+      ez = [0, 1];
+      sc = [1, 1, 1];
+      n = 'Perspektywa wojskowa (planometria)';
+      angs = [45, 45];
+      orto = false;
     } else {
       ex = [1, 0];
       ey = [-Math.cos(d2r(45)), -Math.sin(d2r(45))];
       ez = [0, 1];
       sc = [1, 0.5, 1];
-      n = 'Dimetria ukośna (kawalerska)';
+      n = 'Perspektywa kawalerska (dimetria ukośna)';
       angs = [0, 45];
       orto = false;
     }
@@ -43,7 +51,7 @@
     const p = [E[0][0], E[1][0], E[2][0]],
       q = [E[0][1], E[1][1], E[2][1]];
     let d = V.norm(V.cross(p, q));
-    if (orto ? d[2] < 0 : d[1] < 0) d = V.mul(d, -1);
+    if (orto || type === 'woj' ? d[2] < 0 : d[1] < 0) d = V.mul(d, -1);
     const map = (P) => [P[0] * E[0][0] + P[1] * E[1][0] + P[2] * E[2][0], -(P[0] * E[0][1] + P[1] * E[1][1] + P[2] * E[2][1])];
     return { type, ex, ey, ez, sc, E, n, angs, orto, dir: d, map };
   }
@@ -54,7 +62,8 @@
     choices: [
       ['iso', 'Izometria'],
       ['dimp', 'Dimetria prostokątna'],
-      ['dimu', 'Dimetria ukośna (kawalerska)'],
+      ['dimu', 'Perspektywa kawalerska (dimetria ukośna)'],
+      ['woj', 'Perspektywa wojskowa'],
     ],
     v: 'iso',
     rebuildFrame: true,
@@ -171,7 +180,7 @@
       '<ol><li><b>Aksonometria</b> = rzut równoległy bryły wraz z jej układem współrzędnych (x, y, z) na jedną rzutnię. Osie rzutują się na osie aksonometryczne, a jednostki – na jednostki skrócone.</li>' +
       '<li><b>Izometria</b>: osie x i y pod kątem 30° do poziomu, z pionowo; skróty 1 : 1 : 1 (praktyczne; rzeczywiste ≈ 0,82).</li>' +
       '<li><b>Dimetria prostokątna</b>: oś x pod kątem 7°10′, oś y pod kątem 41°25′; skróty x : y : z = 1 : ½ : 1.</li>' +
-      '<li><b>Dimetria ukośna</b> (kawalerska): x poziomo, z pionowo (rzeczywista wielkość – rzutnia ∥ ściany czołowej), y pod 45°, skrót ½.</li>' +
+      '<li><b>Perspektywa kawalerska</b> (dimetria ukośna): x poziomo, z pionowo (rzeczywista wielkość – rzutnia ∥ ściany czołowej), y pod 45°, skrót ½.</li>' + '<li><b>Perspektywa wojskowa</b>: rzutnia pozioma – rzut z góry w prawdziwej wielkości obrócony o 45°, wysokości pionowo bez skrótu.</li>' +
       '<li><b>Procedura rysowania</b>: osie → prostopadłościan opisany (wymiary × skróty) → odcięcie części → widoczność. Długości mierzymy <u>tylko wzdłuż osi</u> (lub równolegle do nich) – odcinki ukośne nie mają stałego skrótu!</li></ol>',
     build(p, B) {
       const ax = axon(p.ax);
@@ -623,6 +632,420 @@
       B.info('klad', 'Kład przekroju – rzeczywista wielkość. Obwód: ' + G.f1(kl.reduce((s, q, i) => s + V.dist(q.K, kl[(i + 1) % kl.length].K), 0)));
       B.info('secT', 'Rzut poziomy przekroju P<sub>1</sub>′P<sub>2</sub>′… (zniekształcony)');
       B.src('t');
+    },
+  });
+
+  /* =================================================================
+     4.3 Lista 4: bryła (sześcian lub bryła opisana na sześcianie) cięta
+         płaszczyzną ABC – część pod płaszczyzną, metoda śladów
+     ================================================================= */
+  const AA = 60;
+  const bx = G.box;
+  const L4 = {
+    a: { parts: () => [bx(0, AA, 0, AA, 0, AA)], A: [17, 0, 60, [0, 0, 60], [60, 0, 60]], B: [60, 33, 60, [60, 0, 60], [60, 60, 60]], C: [21, 60, 0, [0, 60, 0], [60, 60, 0]], d: 'sześcian' },
+    b: { parts: () => [bx(0, AA, 0, AA, 0, AA)], A: [13, 0, 60, [0, 0, 60], [60, 0, 60]], B: [60, 60, 15.5, [60, 60, 0], [60, 60, 60]], C: [0, 29, 0, [0, 0, 0], [0, 60, 0]], d: 'sześcian' },
+    c: { parts: () => [bx(0, AA, 0, AA, 0, AA)], A: [33, 60, 60, [0, 60, 60], [60, 60, 60]], B: [60, 34, 60, [60, 0, 60], [60, 60, 60]], C: [0, 29, 0, [0, 0, 0], [0, 60, 0]], d: 'sześcian' },
+    d: { parts: () => [bx(0, 20, 0, 60, 0, 60), bx(40, 60, 0, 60, 0, 60), bx(20, 40, 0, 30, 0, 60)], A: [0, 32, 60, [0, 0, 60], [0, 60, 60]], B: [29, 0, 60, [0, 0, 60], [60, 0, 60]], C: [40, 60, 0, [40, 60, 0], [60, 60, 0]], d: 'sześcian z pionowym wpustem od przodu' },
+    e: { parts: () => [bx(0, 60, 0, 60, 0, 20), bx(0, 60, 0, 40, 20, 40), bx(0, 60, 0, 20, 40, 60)], A: [0, 20, 60, [0, 0, 60], [0, 20, 60]], B: [60, 0, 0, [60, 0, 0], [60, 0, 60]], C: [30, 60, 0, [0, 60, 0], [60, 60, 0]], d: 'schodki (trzy stopnie)' },
+    f: {
+      parts: () => [bx(0, 20, 0, 60, 0, 60), G.prismX([[60, 0], [0, 0], [0, 60], [30, 60]], 20, 40), G.prismX([[60, 0], [0, 0], [0, 60]], 40, 60)],
+      A: [0, 0, 60, [0, 0, 0], [0, 0, 60]],
+      B: [60, 0, 30, [60, 0, 0], [60, 0, 60]],
+      C: [20, 60, 30, [20, 60, 0], [20, 60, 60]],
+      d: 'bryła z dwoma skośnymi ścięciami',
+    },
+    g: {
+      parts: () => [G.prismY([[0, 0], [60, 0], [30, 30], [0, 30]], 30, 60), bx(0, 30, 0, 30, 0, 60), G.prismX([[0, 0], [30, 0], [30, 30], [0, 60]], 30, 60)],
+      A: [0, 60, 60, [0, 60, 0], [0, 60, 60]],
+      B: [44, 0, 60, [0, 0, 60], [60, 0, 60]],
+      C: [60, 46.5, 0, [60, 0, 0], [60, 60, 0]],
+      d: 'bryła ze ściętym narożem i skośnymi ścianami',
+    },
+    h: {
+      parts: () => [G.prismY([[0, 0], [30, 0], [30, 30], [0, 60]], 0, 60), G.prismX([[0, 0], [60, 0], [0, 30]], 30, 60)],
+      A: [0, 0, 60, [0, 0, 0], [0, 0, 60]],
+      B: [44, 0, 30, [30, 0, 30], [60, 0, 30]],
+      C: [16, 60, 0, [0, 60, 0], [60, 60, 0]],
+      d: 'bryła z dachem jednospadowym i klinem',
+    },
+    i: { parts: () => [bx(0, 30, 0, 60, 0, 60), G.prismX([[0, 0], [0, 60], [60, 30]], 30, 60)], A: [60, 45, 60, [60, 0, 60], [60, 60, 60]], B: [60, 0, 14, [60, 0, 0], [60, 0, 60]], C: [0, 60, 29, [0, 60, 0], [0, 60, 60]], d: 'prostopadłościan + klin trójkątny' },
+    j: {
+      parts: () => [
+        G.pyramid(
+          [
+            [0, 0, 0],
+            [60, 0, 0],
+            [60, 60, 0],
+            [0, 60, 0],
+          ],
+          [30, 30, 60]
+        ),
+      ],
+      A: [12.5, 0, 60, [0, 0, 60], [60, 0, 60]],
+      B: [60, 35, 60, [60, 0, 60], [60, 60, 60]],
+      C: [0, 60, 14, [0, 60, 0], [0, 60, 60]],
+      d: 'ostrosłup wpisany w sześcian',
+    },
+  };
+  const cubeEdges = (() => {
+    const c = (i, j, k) => [i * AA, j * AA, k * AA];
+    const E = [];
+    for (let a = 0; a < 2; a++)
+      for (let b = 0; b < 2; b++) {
+        E.push([c(0, a, b), c(1, a, b)], [c(a, 0, b), c(a, 1, b)], [c(a, b, 0), c(a, b, 1)]);
+      }
+    return E;
+  })();
+  const faceName = (n, d) => {
+    const ax = [Math.abs(n[0]), Math.abs(n[1]), Math.abs(n[2])];
+    if (ax[0] > 0.999) return 'płaszczyzna ściany bocznej x = ' + G.f0(d / n[0]);
+    if (ax[1] > 0.999) return 'płaszczyzna ściany ' + (d / n[1] > 30 ? 'przedniej' : d / n[1] < 30 ? 'tylnej / wewnętrznej' : '') + ' y = ' + G.f0(d / n[1]);
+    if (ax[2] > 0.999) return 'płaszczyzna ' + (d / n[2] > 0.5 ? 'poziomej ściany z = ' + G.f0(d / n[2]) : 'podstawy z = 0');
+    return 'płaszczyzna ściany skośnej';
+  };
+
+  GW.addLesson({
+    id: 'm4-lista',
+    mod: 4,
+    lista: 'L4 Z1',
+    title: '4.3 Przekrój bryły płaszczyzną ABC (Lista 4, a–j)',
+    v2title: 'Aksonometria – część bryły pod płaszczyzną ABC',
+    opts: [
+      {
+        k: 'set',
+        l: 'Bryła (zad. 1)',
+        choices: 'abcdefghij'.split('').map((c) => [c, '📋 Lista 4 · zad. 1' + c + ') – ' + L4[c].d]),
+        v: 'a',
+        rebuildFrame: true,
+      },
+      Object.assign({}, AXOPT, { v: 'dimu' }),
+      {
+        k: 'keep',
+        l: 'Zostawiamy',
+        choices: [
+          ['below', 'część pod płaszczyzną (jak w treści)'],
+          ['above', 'część nad płaszczyzną'],
+        ],
+        v: 'below',
+      },
+    ],
+    params: [
+      { k: 'dA', l: 'przesuń A po krawędzi', min: -0.25, max: 0.25, step: 0.01, v: 0 },
+      { k: 'dB', l: 'przesuń B po krawędzi', min: -0.25, max: 0.25, step: 0.01, v: 0 },
+      { k: 'dC', l: 'przesuń C po krawędzi', min: -0.25, max: 0.25, step: 0.01, v: 0 },
+    ],
+    mistakes: ['Boki przekroju leżące na <b>ścianach równoległych</b> muszą być równoległe – to najszybsza kontrola.', 'Punkt śladowy (przecięcie boku przekroju z <i>przedłużeniem</i> krawędzi) może leżeć poza bryłą – to normalne, służy tylko do dalszej konstrukcji.', 'Grubo rysujemy tylko część pod płaszczyzną; część odciętą najwyżej cienko.'],
+    algo:
+      '<ol><li><b>Punkty dane</b> A, B, C leżą na krawędziach. Dwa punkty leżące w tej samej ścianie łączymy – to bok przekroju.</li>' +
+      '<li><b>Punkty śladowe</b>: prostą boku przekroju przedłużamy do przecięcia z prostymi krawędzi tej samej ściany (także przedłużonymi). Punkt przecięcia leży też w płaszczyźnie <i>sąsiedniej</i> ściany – mamy w niej kolejny punkt.</li>' +
+      '<li><b>Ściany równoległe</b> przecinamy wzdłuż prostych równoległych – wystarczy jeden punkt i kierunek.</li>' +
+      '<li>Powtarzamy, aż obiegniemy wszystkie ściany przecięte płaszczyzną; wielokąt przekroju musi się zamknąć (kontrola).</li>' +
+      '<li><b>Wynik</b>: część pod płaszczyzną grubo (widoczne) i kreskowo cienko (niewidoczne), przekrój zakreskowany.</li></ol>',
+    build(p, B) {
+      const ax = axon(p.ax);
+      const M = ax.map;
+      const D = L4[p.set] || L4.a;
+      const U = new G.Union(D.parts());
+      const pt = (q, dt) => {
+        const [x, y, z, e0, e1] = q;
+        const L = V.dist(e0, e1);
+        const t0 = V.dist(e0, [x, y, z]) / L;
+        return V.lerp(e0, e1, Math.max(0, Math.min(1, t0 + dt)));
+      };
+      const A = pt(D.A, p.dA),
+        Bq = pt(D.B, p.dB),
+        C = pt(D.C, p.dC);
+      let cut = G.plane3(A, Bq, C);
+      if (cut.n[2] < 0) cut = { n: V.mul(cut.n, -1), d: -cut.d };
+      const keepPl = p.keep === 'above' ? { n: V.mul(cut.n, -1), d: -cut.d } : cut;
+      const creases = U.creaseEdges();
+      B.data = { ax, center: [30, 30, 30] };
+      B.step({
+        title: 'Dane: ' + D.d + ', punkty A, B, C',
+        co: 'Bryła (' + D.d + ') w ' + ax.n.toLowerCase() + '. Punkty <b>A, B, C</b> leżą na krawędziach i wyznaczają płaszczyznę cięcia. Szukamy części bryły ' + (p.keep === 'above' ? 'nad' : 'pod') + ' płaszczyzną.',
+        jak: 'Cienkie linie to sześcian opisany (pomocniczy). Najedź na punkt – zobaczysz, na której krawędzi leży.',
+        why: 'Płaszczyznę wyznaczają trzy niewspółliniowe punkty. Przekrój to wielokąt, którego boki leżą na ścianach bryły – każdy bok to przecięcie płaszczyzny cięcia z płaszczyzną jednej ściany.',
+        cam: { dir: ax.dir },
+      });
+      cubeEdges.forEach((e, i) => {
+        B.a2({ t: 'seg', id: 'cube', a: M(e[0]), b: M(e[1]), s: 'thin' });
+        B.a3({ t: 'seg', id: 'cube', a: e[0], b: e[1], s: 'thin' });
+      });
+      B.info('cube', 'Sześcian opisany na bryle (pomocniczy, a = 60)');
+      U.parts.forEach((pp) => pp.faces.forEach((f) => B.a3({ t: 'poly', id: 'solid', pts: f, col: '#e8c060', op: 0.3 })));
+      B.info('solid', 'Bryła: ' + D.d);
+      creases.forEach((e) => {
+        B.a2({ t: 'seg', id: 'edge', a: M(e.a), b: M(e.b), s: 'given' });
+        B.a3({ t: 'seg', id: 'edge', a: e.a, b: e.b, s: 'proj' });
+      });
+      B.info('edge', 'Krawędź bryły');
+      [
+        ['A', A, D.A],
+        ['B', Bq, D.B],
+        ['C', C, D.C],
+      ].forEach(([n, P, q]) => {
+        B.a2({ t: 'pt', id: 'g' + n, p: M(P), s: 'res', label: n });
+        B.a3({ t: 'pt', id: 'g' + n, p: P, s: 'res', label: n });
+        B.info('g' + n, 'Punkt ' + n + ' – dany, leży na krawędzi (' + q[3].join(',') + ')–(' + q[4].join(',') + ')');
+      });
+      /* ---------- metoda śladów: BFS po płaszczyznach ścian ---------- */
+      const lines = creases.map((e) => ({ a: e.a, b: e.b, real: true })).concat(cubeEdges.map((e) => ({ a: e[0], b: e[1], real: false })));
+      const planes = [];
+      const addPlane = (pl, cubeOk) => {
+        let n = pl.n,
+          d = pl.d;
+        if (n[0] + n[1] * 1e-3 + n[2] * 1e-6 < 0) {
+          n = V.mul(n, -1);
+          d = -d;
+        }
+        if (planes.some((q) => V.dist(q.n, n) < 1e-6 && Math.abs(q.d - d) < 1e-6)) return;
+        const L = lines.filter((l) => Math.abs(V.dot(n, l.a) - d) < 1e-6 && Math.abs(V.dot(n, l.b) - d) < 1e-6);
+        if (L.length >= 2 && (cubeOk || L.some((l) => l.real))) planes.push({ n, d, L, done: false, axis: [0, 1, 2].findIndex((i) => Math.abs(n[i]) > 0.999) });
+      };
+      U.parts.forEach((pp) => pp.planes.forEach((q) => addPlane(q, false)));
+      [0, 1, 2].forEach((i) =>
+        [0, AA].forEach((v) => {
+          const n = [0, 0, 0];
+          n[i] = 1;
+          addPlane({ n, d: v }, true);
+        })
+      );
+      const K = [
+        { p: A, n: 'A', real: true },
+        { p: Bq, n: 'B', real: true },
+        { p: C, n: 'C', real: true },
+      ];
+      const known = (P) => K.find((q) => V.dist(q.p, P) < 1e-5);
+      let num = 1,
+        sl = 1;
+      const tol = 1e-5;
+      const segLineX = (P, d, l) => {
+        const e = V.sub(l.b, l.a);
+        const w = V.sub(l.a, P);
+        const c1 = V.cross(d, e);
+        const den = V.dot(c1, c1);
+        if (den < 1e-12) return null;
+        const t = V.dot(V.cross(w, e), c1) / den;
+        const s = V.dot(V.cross(w, d), c1) / den;
+        return { p: V.add(P, V.mul(d, t)), s, t };
+      };
+      let guard = 0;
+      let traceNo = 0;
+      const tryTrace = () => {
+        // ślad prostej PQ (dwóch znanych punktów) na płaszczyźnie ściany, w której jest już inny znany punkt
+        const cands = [];
+        const R = K.filter((q) => q.real || /^[ABC]$/.test(q.n));
+        for (let i = 0; i < R.length; i++)
+          for (let j = i + 1; j < R.length; j++) {
+            const P = R[i],
+              Q = R[j];
+            if (planes.some((g) => Math.abs(V.dot(g.n, P.p) - g.d) < tol && Math.abs(V.dot(g.n, Q.p) - g.d) < tol)) continue;
+            planes.forEach((g) => {
+              if (g.done || g.axis < 0) return;
+              const on = K.filter((q) => Math.abs(V.dot(g.n, q.p) - g.d) < tol);
+              if (!on.length) return;
+              const r = G.segPlane(P.p, Q.p, g);
+              if (!r || r.p.some((v) => v < -40 || v > 100) || known(r.p)) return;
+              cands.push({ P, Q, g, T: r.p, score: (g.axis === 2 ? 2 : 1) + (P.real && Q.real ? 1 : 0) - V.dist(r.p, [30, 30, 30]) / 200 });
+            });
+          }
+        if (!cands.length) return false;
+        cands.sort((a, b) => b.score - a.score);
+        const c = cands[0];
+        const ax = c.g.axis,
+          val = c.g.d / c.g.n[ax];
+        const drop = (X) => {
+          const Y = X.slice();
+          Y[ax] = val;
+          return Y;
+        };
+        const P1 = drop(c.P.p),
+          Q1 = drop(c.Q.p);
+        const T = c.T;
+        const item = { p: T, real: false, n: 'T_' + ++traceNo };
+        K.push(item);
+        const sid = 'tt' + traceNo;
+        const axN = ['x', 'y', 'z'][ax];
+        B.step({
+          title: 'Punkt śladowy prostej ' + c.P.n + c.Q.n + ' na ' + faceName(c.g.n, c.g.d).replace('płaszczyzna ', 'płaszczyźnie '),
+          co: 'Żadna ściana nie zawiera dwóch znanych punktów – wyznaczamy <b>ślad prostej ' + h(c.P.n) + h(c.Q.n) + '</b> na ' + faceName(c.g.n, c.g.d) + ': punkt <b>' + h(item.n) + '</b>.',
+          jak: '<ol><li>Rzutujemy ' + h(c.P.n) + ' i ' + h(c.Q.n) + ' na tę płaszczyznę wzdłuż osi ' + axN + ' (równolegle do krawędzi ⟂ ściany) → ' + h(c.P.n + "'") + ', ' + h(c.Q.n + "'") + '.</li><li>Prosta ' + h(c.P.n) + h(c.Q.n) + ' i jej rzut ' + h(c.P.n + "'") + h(c.Q.n + "'") + ' leżą w jednej płaszczyźnie rzutującej – przecinają się w punkcie śladowym ' + h(item.n) + '.</li><li>' + h(item.n) + ' leży w płaszczyźnie cięcia i w płaszczyźnie ściany – razem z innym punktem tej ściany wyznacza bok przekroju.</li></ol>',
+          why: 'Prosta leżąca w płaszczyźnie cięcia przebija płaszczyznę ściany w punkcie, który należy do obu płaszczyzn – czyli do ich krawędzi przecięcia (śladu).',
+          cam: { dir: ax === 2 ? [0.5, 0.6, 1] : ax === 1 ? [0.4, 1, 0.5] : [1, 0.5, 0.5] },
+        });
+        [
+          [c.P.p, P1],
+          [c.Q.p, Q1],
+        ].forEach(([X, X1]) => {
+          B.a2({ t: 'seg', id: sid + 'd', a: M(X), b: M(X1), s: 'thin' });
+          B.a3({ t: 'seg', id: sid + 'd', a: X, b: X1, s: 'thin' });
+          B.a2({ t: 'pt', id: sid + 'd', p: M(X1), s: 'aux2', r: 2 });
+          B.a3({ t: 'pt', id: sid + 'd', p: X1, s: 'aux2', small: true });
+        });
+        const far = (A0, B0) => (V.dist(A0, T) > V.dist(B0, T) ? A0 : B0);
+        B.a2({ t: 'seg', id: sid + 'l', a: M(far(c.P.p, c.Q.p)), b: M(T), s: 'aux2' });
+        B.a3({ t: 'seg', id: sid + 'l', a: far(c.P.p, c.Q.p), b: T, s: 'aux2' });
+        B.a2({ t: 'seg', id: sid + 'r', a: M(far(P1, Q1)), b: M(T), s: 'aux2', w: 0.8 });
+        B.a3({ t: 'seg', id: sid + 'r', a: far(P1, Q1), b: T, s: 'aux2' });
+        B.a2({ t: 'pt', id: 'k' + item.n, p: M(T), s: 'aux', label: item.n });
+        B.a3({ t: 'pt', id: 'k' + item.n, p: T, s: 'aux', label: item.n });
+        B.info('k' + item.n, 'Punkt śladowy ' + h(item.n) + ' prostej ' + h(c.P.n) + h(c.Q.n) + ' na ' + faceName(c.g.n, c.g.d));
+        B.info(sid + 'd', 'Rzutowanie punktu na płaszczyznę ściany (wzdłuż osi ' + axN + ')');
+        B.src('k' + c.P.n, 'g' + c.P.n, 'k' + c.Q.n, 'g' + c.Q.n);
+        return true;
+      };
+      while (guard++ < 18) {
+        let best = null;
+        planes.forEach((g) => {
+          if (g.done) return;
+          const on = K.filter((q) => Math.abs(V.dot(g.n, q.p) - g.d) < tol);
+          if (on.length >= 2) {
+            const score = on.filter((q) => q.real).length * 2 + on.length;
+            if (!best || score > best.score) best = { g, on, score, par: null };
+          } else if (on.length === 1) {
+            const pg = planes.find((q) => q.done && q.dir && V.dist(q.n, g.n) < 1e-6);
+            if (pg && (!best || best.score < 1)) best = { g, on, score: 0.5, par: pg };
+          }
+        });
+        if (!best) {
+          if (traceNo < 3 && tryTrace()) continue;
+          break;
+        }
+        const g = best.g;
+        g.done = true;
+        let P0, d;
+        if (best.par) {
+          P0 = best.on[0].p;
+          d = best.par.dir;
+        } else {
+          let i0 = 0,
+            j0 = 1,
+            bd = -1;
+          for (let i = 0; i < best.on.length; i++)
+            for (let j = i + 1; j < best.on.length; j++) {
+              const dd = V.dist(best.on[i].p, best.on[j].p);
+              if (dd > bd) {
+                bd = dd;
+                i0 = i;
+                j0 = j;
+              }
+            }
+          P0 = best.on[i0].p;
+          d = V.norm(V.sub(best.on[j0].p, P0));
+        }
+        g.dir = d;
+        const newPts = [];
+        g.L.forEach((l) => {
+          const r = segLineX(P0, d, l);
+          if (!r) return;
+          if (r.p.some((v) => v < -45 || v > 105)) return;
+          if (known(r.p)) return;
+          const onSolidEdge = l.real && r.s >= -1e-6 && r.s <= 1 + 1e-6;
+          const inPoly = U.contains(r.p, 1e-6) && Math.abs(G.sd(cut, r.p)) < 1e-6;
+          const item = { p: r.p, real: onSolidEdge && inPoly, n: onSolidEdge && inPoly ? String(num++) : 'S_' + sl++, line: l };
+          K.push(item);
+          newPts.push(item);
+        });
+        const used = best.on.concat(newPts);
+        const ts = used.map((q) => V.dot(V.sub(q.p, P0), d));
+        const t0 = Math.min(...ts) - 6,
+          t1 = Math.max(...ts) + 6;
+        const la = V.add(P0, V.mul(d, t0)),
+          lb = V.add(P0, V.mul(d, t1));
+        const sid = 'tr' + guard;
+        B.step({
+          title: (best.par ? 'Równoległa w ' : 'Prosta w ') + faceName(g.n, g.d).replace('płaszczyzna ', 'płaszczyźnie '),
+          co:
+            (best.par ? 'Ta ściana jest równoległa do już przeciętej – bok przekroju jest <b>równoległy</b> do poprzedniego i przechodzi przez punkt ' + h(best.on[0].n) + '.' : 'Punkty ' + best.on.map((q) => '<b>' + h(q.n) + '</b>').join(', ') + ' leżą w ' + faceName(g.n, g.d) + ' → prowadzimy przez nie prostą.') +
+            (newPts.length ? ' Nowe punkty: ' + newPts.map((q) => h(q.n) + (q.real ? '' : ' (śladowy)')).join(', ') + '.' : ''),
+          jak: newPts.length ? 'Prostą przedłużamy do przecięcia z (przedłużonymi) krawędziami tej ściany. Punkt na krawędzi bryły = wierzchołek przekroju; punkt na przedłużeniu krawędzi = <b>punkt śladowy</b> – leży też w płaszczyźnie sąsiedniej ściany i posłuży do dalszej konstrukcji.' : 'Prosta przechodzi już przez znane punkty – to bok przekroju (kontrola).',
+          why: 'Płaszczyzna cięcia i płaszczyzna ściany przecinają się wzdłuż prostej; każda prosta krawędzi tej ściany przecina tę prostą w punkcie wspólnym trzech płaszczyzn (cięcia, ściany i ściany sąsiedniej) – stąd przenoszenie punktów między ścianami.',
+          cam: { dir: ax.dir },
+        });
+        B.a2({ t: 'seg', id: sid, a: M(la), b: M(lb), s: 'aux', noFit: true });
+        B.a3({ t: 'seg', id: sid, a: la, b: lb, s: 'aux' });
+        B.info(sid, 'Ślad płaszczyzny cięcia na ' + faceName(g.n, g.d));
+        best.on.forEach((q) => B.src('k' + q.n, 'g' + q.n));
+        newPts.forEach((q) => {
+          const id = 'k' + q.n;
+          if (!q.real) {
+            const l = q.line;
+            const far = V.dist(l.a, q.p) > V.dist(l.b, q.p) ? l.a : l.b;
+            B.a2({ t: 'seg', id: id + 'e', a: M(far), b: M(q.p), s: 'thin', noFit: true });
+            B.a3({ t: 'seg', id: id + 'e', a: far, b: q.p, s: 'thin' });
+          }
+          const far0 = q.p.some((v) => v < -12 || v > 72);
+          B.a2({ t: 'pt', id, p: M(q.p), s: q.real ? 'res' : 'aux', label: q.n, r: q.real ? 3 : 2.4, noFit: far0 });
+          B.a3({ t: 'pt', id, p: q.p, s: q.real ? 'res' : 'aux', label: q.n, small: !q.real });
+          B.info(id, q.real ? 'Wierzchołek przekroju ' + h(q.n) + ' (na krawędzi bryły)' : 'Punkt śladowy ' + h(q.n) + ' – na przedłużeniu krawędzi (leży w dwóch płaszczyznach ścian)');
+        });
+      }
+      /* ---------- pozostałe wierzchołki przekroju ---------- */
+      const secs = U.sections(cut);
+      const rest = [];
+      creases.forEach((e) => {
+        const r = G.segPlane(e.a, e.b, cut);
+        if (!r || r.t < -1e-6 || r.t > 1 + 1e-6) return;
+        if (!K.some((q) => V.dist(q.p, r.p) < 1e-4) && !rest.some((q) => V.dist(q, r.p) < 1e-4)) rest.push(r.p);
+      });
+      if (rest.length) {
+        B.step({
+          title: 'Pozostałe wierzchołki przekroju',
+          co: 'Na krawędziach, do których nie doprowadziły nas proste w ścianach, wyznaczamy brakujące wierzchołki przekroju: ' + rest.map((q, i) => h(String(num + i))).join(', ') + '.',
+          jak: 'Przez krawędź prowadzimy płaszczyznę pomocniczą (np. przekątną sześcianu opisanego, zawierającą tę krawędź), wyznaczamy jej krawędź przecięcia z płaszczyzną cięcia (dwa punkty śladowe na ścianach sześcianu) i przecinamy z krawędzią. Ten sam wynik daje przedłużanie boków przekroju w kolejnych ścianach.',
+          why: 'Każdy wierzchołek przekroju to przebicie krawędzi bryły płaszczyzną cięcia – można go zawsze wyznaczyć metodą płaszczyzny pomocniczej zawierającej krawędź (jak przebicie prostej z płaszczyzną w rzutach Monge’a).',
+          cam: { dir: ax.dir },
+        });
+        rest.forEach((q) => {
+          const nm = String(num++);
+          K.push({ p: q, real: true, n: nm });
+          B.a2({ t: 'pt', id: 'k' + nm, p: M(q), s: 'res', label: nm });
+          B.a3({ t: 'pt', id: 'k' + nm, p: q, s: 'res', label: nm });
+          B.info('k' + nm, 'Wierzchołek przekroju ' + h(nm) + ' (przebicie krawędzi płaszczyzną cięcia)');
+        });
+      }
+      /* ---------- wynik ---------- */
+      B.step({
+        title: 'Wielokąt przekroju',
+        co: 'Łączymy wierzchołki przekroju leżące na tych samych ścianach – powstaje wielokąt przekroju (zakreskowany).',
+        jak: 'Kontrola: wielokąt jest zamknięty; boki na ścianach równoległych są równoległe.',
+        why: 'Przekrój bryły niewypukłej może mieć kilka „wysp” albo wcięcia – każda część bryły przecięta płaszczyzną daje fragment przekroju.',
+        cam: { dir: ax.dir },
+      });
+      B.endWhere((q) => /^tr\d/.test(q.id) || /^tt\d/.test(q.id) || /^k.*e$/.test(q.id) || /^k[ST]_/.test(q.id));
+      secs.forEach((sp, i) => {
+        B.a2({ t: 'hatch', id: 'sec', pts: sp.map(M), s: 'hatch', step: 5 });
+        B.a3({ t: 'poly', id: 'sec', pts: sp, col: '#d01818', op: 0.5 });
+      });
+      B.info('sec', 'Przekrój bryły płaszczyzną ABC');
+      const lower = U.clip(keepPl);
+      const lc = lower.creaseEdges();
+      B.step({
+        title: 'Część ' + (p.keep === 'above' ? 'nad' : 'pod') + ' płaszczyzną – widoczność',
+        co: 'Rysujemy pozostałą część bryły: krawędzie widoczne <b>grubo</b>, niewidoczne <b>kreskowo cienko</b>; część odciętą pomijamy (tu – cienko dla porównania).',
+        jak: 'Widoczność ustalamy względem kierunku rzutowania aksonometrii (patrzymy ' + (ax.type === 'woj' ? 'z góry, ukośnie' : 'od przodu, z prawej, z góry') + ').',
+        why: 'Przekrój staje się nową ścianą bryły – zasłania to, co za nim, i sam może być zasłonięty.',
+        cam: { dir: ax.dir },
+      });
+      B.endWhere((q) => q.id === 'edge' || q.id === 'solid');
+      creases.forEach((e) => B.a2({ t: 'seg', id: 'cutaway', a: M(e.a), b: M(e.b), s: 'thin' }));
+      B.info('cutaway', 'Krawędź części odciętej');
+      const pcs = G.hlr(lc, lower.faces(), { dir: ax.dir });
+      pcs.forEach((pc) => {
+        B.a2({ t: 'seg', id: 'low', a: M(pc.a), b: M(pc.b), s: pc.st === 'vis' ? 'vis' : 'hid' });
+        B.a3({ t: 'seg', id: 'low', a: pc.a, b: pc.b, s: 'given' });
+      });
+      lower.parts.forEach((pp) => pp.faces.forEach((f) => B.a3({ t: 'poly', id: 'lowf', pts: f, col: '#e8c060', op: 0.55 })));
+      B.info('low', 'Krawędź części ' + (p.keep === 'above' ? 'nad' : 'pod') + ' płaszczyzną');
+      B.step({
+        title: 'Wynik',
+        co: 'Część bryły ' + (p.keep === 'above' ? 'nad' : 'pod') + ' płaszczyzną ABC z przekrojem i widocznością.',
+        jak: 'Przesuń punkty A, B, C po krawędziach suwakami albo zmień układ aksonometryczny – konstrukcja przeliczy się.',
+        why: 'Ta sama metoda działa w każdym rzucie równoległym (aksonometria, Monge) – korzysta tylko z przynależności i równoległości, które rzut równoległy zachowuje.',
+        cam: { dir: ax.dir },
+      });
+      B.endWhere((q) => q.id === 'cube' && B.p2.indexOf(q) >= 0);
+      B.data.ok = secs.length > 0;
     },
   });
 })();
