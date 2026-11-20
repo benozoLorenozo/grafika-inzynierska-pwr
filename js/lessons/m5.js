@@ -651,10 +651,11 @@
       '<li><b>m = δ ∩ γ</b>: przecięcia warstwic δ i γ o równych cechach. <b>P = m ∩ a</b>.</li>' +
       '<li><b>Widoczność</b>: część a nad δ widoczna (cecha a &gt; cecha δ w tym miejscu); zmiana w P. Poza wielobokiem prosta zawsze widoczna.</li></ol>',
     build(p, B) {
-      const { A, B: Bq, C, poly } = L5Z2;
+      const D5 = p.set === 'gen' && p.gen ? p.gen : L5Z2;
+      const { A, B: Bq, C, poly } = D5;
       const pf = planeFn(A, Bq, C);
-      const P3a = [L5Z2.l3[0], L5Z2.l3[1], p.h3],
-        P2a = [L5Z2.l2[0], L5Z2.l2[1], p.h2];
+      const P3a = [D5.l3[0], D5.l3[1], D5 === L5Z2 ? p.h3 : D5.l3[2]],
+        P2a = [D5.l2[0], D5.l2[1], D5 === L5Z2 ? p.h2 : D5.l2[2]];
       const box = [-1, 0, 24, 24];
       B.data.F = (x, y) => (G.pointInPoly2([x, y], poly) ? pf.f(x, y) : NaN);
       B.data.box = box;
@@ -664,7 +665,7 @@
         a1 = V.add(P3a, V.mul(dirL, 2.6));
       B.step({
         title: 'Dane: płaszczyzna δ = (A, B, C) i prosta a',
-        co: 'Płaszczyzna <b>δ</b> dana punktami ' + cecha('A', 3) + ', ' + cecha('B', -1) + ', ' + cecha('C', 2) + ' (wielobok). Prosta <b>a</b> przez punkty o cechach ' + f1(p.h3) + ' i ' + f1(p.h2) + '. Wyznaczyć przebicie P i widoczność a.',
+        co: 'Płaszczyzna <b>δ</b> dana punktami ' + cecha('A', A[2]) + ', ' + cecha('B', Bq[2]) + ', ' + cecha('C', C[2]) + ' (wielobok). Prosta <b>a</b> przez punkty o cechach ' + f1(P3a[2]) + ' i ' + f1(P2a[2]) + '. Wyznaczyć przebicie P i widoczność a.',
         jak: 'Strzałka na prostej wskazuje kierunek spadku (malejących cech).',
         why: 'W rzucie cechowanym przebicie szukamy tak jak w Monge’u: przez prostą prowadzimy płaszczyznę pomocniczą.',
         cam: { dir: [0.4, 0.9, 0.9] },
@@ -683,8 +684,8 @@
       B.a3({ t: 'seg', id: 'a', a: a0, b: a1, s: 'given', label: 'a' });
       B.a2({ t: 'text', id: 'a', p: V.add(P2(a1), [0.6, 0.6]), txt: "a'", s: 'note' });
       B.info('a', 'Prosta a');
-      drawPtC(B, 'a3', P3a, String(p.h3).replace('.', ','), 'given', 'Punkt prostej a o cesze ' + f1(p.h3));
-      drawPtC(B, 'a2', P2a, String(p.h2).replace('.', ','), 'given', 'Punkt prostej a o cesze ' + f1(p.h2));
+      drawPtC(B, 'a3', P3a, String(P3a[2]).replace('.', ','), 'given', 'Punkt prostej a o cesze ' + f1(P3a[2]));
+      drawPtC(B, 'a2', P2a, String(P2a[2]).replace('.', ','), 'given', 'Punkt prostej a o cesze ' + f1(P2a[2]));
       // stopniowanie
       const sAB = gradeSeg(A, Bq),
         sBC = gradeSeg(Bq, C),
@@ -693,7 +694,7 @@
       B.step({
         title: 'Stopniowanie boków AB, BC, AC i prostej a',
         co: 'Punkty o cechach całkowitych: na AB: ' + sAB.map((q) => q.k).join(', ') + '; na BC: ' + sBC.map((q) => q.k).join(', ') + '; na a: ' + gl.map((q) => q.k).join(', ') + '.',
-        jak: 'Twierdzenie Talesa (jak w 5.1). Dla prostej a mamy już dwa punkty całkowite – dalsze odkładamy w tych samych odstępach (moduł prostej = ' + G.f2(V.dist(P2(P3a), P2(P2a)) / Math.max(1e-9, Math.abs(p.h3 - p.h2))) + ').',
+        jak: 'Twierdzenie Talesa (jak w 5.1). Dla prostej a mamy już dwa punkty – dalsze punkty całkowite odkładamy w tych samych odstępach (moduł prostej = ' + G.f2(V.dist(P2(P3a), P2(P2a)) / Math.max(1e-9, Math.abs(P3a[2] - P2a[2]))) + ').',
         why: 'Cecha zmienia się liniowo wzdłuż prostej – równe różnice cech to równe odcinki w rzucie.',
       });
       [sAB, sBC, sAC].forEach((arr, j) =>
@@ -1046,10 +1047,11 @@
       '<li>Część k leżąca jednocześnie w obu wielobokach = <b>krawędź przenikania</b> MN (jej końce to przebicia boków jednego wieloboku z drugim).</li>' +
       '<li><b>Widoczność</b> z góry: po jednej stronie MN wyżej jest jeden wielobok, po drugiej – drugi.</li></ol>',
     build(p, B) {
-      const Q = L5Z4.ABCD.map((q) => q.slice());
+      const D5 = p.set === 'gen' && p.gen ? p.gen : L5Z4;
+      const Q = D5.ABCD.map((q) => q.slice());
       const pfQ = planeFn(Q[0], Q[1], Q[2]);
       Q[3][2] = pfQ.f(Q[3][0], Q[3][1]);
-      const T = L5Z4.EFG.map((q, i) => [q[0], q[1], q[2] + [p.dE, p.dF, p.dG][i]]);
+      const T = D5.EFG.map((q, i) => [q[0], q[1], q[2] + [p.dE || 0, p.dF || 0, p.dG || 0][i]]);
       const pfT = planeFn(T[0], T[1], T[2]);
       const box = [0, 0, 18, 24];
       B.data.F = (x, y) => (G.pointInPoly2([x, y], Q.map(P2)) ? pfQ.f(x, y) : G.pointInPoly2([x, y], T.map(P2)) ? pfT.f(x, y) : NaN);
@@ -1058,7 +1060,7 @@
         nT = ['E', 'F', 'G'];
       B.step({
         title: 'Dane: wieloboki ABCD i EFG',
-        co: 'Wielobok ' + nQ.map((n, i) => cecha(n, [3, 1, -1, 1][i])).join(', ') + ' oraz trójkąt ' + nT.map((n, i) => cecha(n, T[i][2])).join(', ') + '. Wyznaczyć krawędź przenikania i widoczność.',
+        co: 'Wielobok ' + nQ.map((n, i) => cecha(n, Q[i][2])).join(', ') + ' oraz trójkąt ' + nT.map((n, i) => cecha(n, T[i][2])).join(', ') + '. Wyznaczyć krawędź przenikania i widoczność.',
         jak: 'Najedź na wierzchołki – w 3D zobaczysz ich wysokości.',
         why: 'Dwa wieloboki płaskie przenikają się wzdłuż odcinka leżącego na krawędzi przecięcia ich płaszczyzn.',
         cam: { dir: [0.4, 0.9, 0.9] },
@@ -1439,7 +1441,7 @@
       '<li><b>Granica robót</b>: punkty przecięcia warstwic skarpy i terenu o tej samej cesze, połączone płynną linią.</li>' +
       '<li><b>Naroża</b>: krawędź dwóch sąsiednich skarp – przez przecięcia ich równocechowych warstwic.</li></ol>',
     build(p, B) {
-      const cfg = EW[p.set] || EW.L5Z1;
+      const cfg = p.set === 'gen' && p.gen ? GW.genEW(p.gen) : EW[p.set] || EW.L5Z1;
       const box = cfg.box;
       const T = cfg.T || cfg._T || (cfg._T = contourTerrain(cfg.contours, box, 160, 160));
       const dH = p.dH || 0;
@@ -1477,6 +1479,7 @@
       B.data.F = F;
       B.data.T = T;
       B.data.box = box;
+      B.data.unit = cfg.unit;
       const aspect = (box[3] - box[1]) / (box[2] - box[0]);
       const NX = 150,
         NY = Math.round(150 * aspect);

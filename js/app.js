@@ -40,6 +40,11 @@
     measure: { on: false, a: null, b: null },
     zsMode: 'auto',
     zs: 1,
+    sub: 0,
+    subs: null,
+    eng: !!store.get('eng', false),
+    dims: !!store.get('dims', false),
+    ui: Object.assign({}, GW.UIDEF, store.get('ui', {})),
   };
   GW.App = App;
   GW.view.p3 = !!store.get('p3', false);
@@ -72,7 +77,7 @@
     if (!id) return '';
     return (App.B && App.B.infoMap[id]) || (App.ovInfo && App.ovInfo[id]) || '';
   }
-  function hover(id) {
+  function hover(id, from3d) {
     if (!id) {
       v3.setHighlight(new Set());
       v2.setHighlight(new Set());
@@ -84,14 +89,40 @@
     v3.setHighlight(H);
     v2.setHighlight(H);
     const t = infoOf(id);
-    if (t) {
-      tip.innerHTML = t;
+    const g = App.ui.geo ? GW.geoInfo(App, id, from3d) : '';
+    if (t || g) {
+      tip.innerHTML = (t || '') + (g ? '<div class="geo">' + g + '</div>' : '') + (App.ui.cursor ? '<div class="geo tipc"></div>' : '');
       tip.style.display = 'block';
       placeTip();
     } else tip.style.display = 'none';
   }
-  v3.onHover = (id) => hover(id);
-  v2.onHover = (id) => hover(id);
+  v3.onHover = (id) => hover(id, true);
+  v2.onHover = (id) => hover(id, false);
+  /* współrzędne przy kursorze */
+  const mkLab = (el) => {
+    const d = document.createElement('div');
+    d.className = 'cursorlab';
+    el.appendChild(d);
+    return d;
+  };
+  const cl2 = mkLab($('#v2')),
+    cl3 = mkLab($('#v3'));
+  const cursorMove = (lab, txt, id, scr) => {
+    const tc = tip.querySelector('.tipc');
+    if (id && tc) tc.textContent = txt ? '📍 ' + txt : '';
+    if (!txt || !App.ui.cursor || id) {
+      lab.style.display = 'none';
+      return;
+    }
+    lab.textContent = txt;
+    lab.style.display = 'block';
+    const W = lab.parentNode.clientWidth;
+    const x = scr[0] + 16 + lab.offsetWidth > W ? scr[0] - lab.offsetWidth - 10 : scr[0] + 16;
+    lab.style.left = x + 'px';
+    lab.style.top = scr[1] + 18 + 'px';
+  };
+  v2.onCursor = (P, e, id, scr) => cursorMove(cl2, P && App.B ? GW.coords2(App, P) : '', id, scr);
+  v3.onCursor = (P, e, id, scr) => cursorMove(cl3, P && App.B ? GW.coords3(App, P) : '', id, scr);
 
   /* kliknięcie: kamera "wzdłuż promienia rzutującego" dla rzutów */
   function planeOfId(id) {
@@ -215,6 +246,7 @@
     $('#legend').innerHTML = L.legend || defaultLegend;
     buildMistakes();
     buildParams();
+    buildGen();
     v3.frameHooks = [];
     v2.onBgMove = null;
     App.quiz.revealed = new Set();
@@ -277,6 +309,12 @@
         o.textContent = t;
         s.appendChild(o);
       });
+      if (p.k === 'set' && App.P.set === 'gen' && !p.choices.some((c) => c[0] === 'gen')) {
+        const o = document.createElement('option');
+        o.value = 'gen';
+        o.textContent = '🎲 wygenerowane zadanie';
+        s.appendChild(o);
+      }
       s.value = App.P[p.k];
       s.dataset.k = p.k;
       s.onchange = () => {
@@ -650,7 +688,9 @@
     }
     p2 = p2.concat(measurePrims());
     if (App.measure.info) Object.assign(App.ovInfo, App.measure.info);
-    const F = (p) => GW.passFilter(p, App.filt) || p.id === 'measure';
+    if (App.dims && App.B) p2 = p2.concat(GW.autoDims(App));
+    if (App.eng && App.fitBox) p2 = p2.concat(GW.engSheet(App, engBox()));
+    const F = (p) => GW.passFilter(p, App.filt) || p.id === 'measure' || /^(dim|frame)/.test(p.id || '');
     v3.setOverlay(p3.filter(F));
     const o2 = p2.filter(F);
     // nie przerysowuj arkusza bez potrzeby (zachowuje podświetlenie pod kursorem)
@@ -658,12 +698,12 @@
   }
   App.refreshOverlay = refreshOverlay;
 
-  function buildOnce(p3x) {
+  function buildOnce(p3x, P) {
     const L = App.lesson;
     const B = new GW.Builder();
     if (p3x != null) B.p3x = p3x;
     try {
-      L.build(App.P, B);
+      L.build(P || App.P, B);
     } catch (e) {
       console.error(e);
       B._err = e;
@@ -721,7 +761,7 @@
       e.textContent = i + 1;
       e.title = (s.title || '').replace(/<[^>]+>/g, '');
       e.setAttribute('aria-label', 'Krok ' + (i + 1) + ': ' + e.title);
-      e.onclick = () => show(i, { anim: true, cam: true });
+      e.onclick = () => show(i, { anim: true, cam: true, subEnd: true });
       tl.appendChild(e);
     });
   }
@@ -904,20 +944,28 @@
       }
     }
     const hideNew = q.on && !q.revealed.has(k) && q.targets.length;
-    const F = (p) => GW.passFilter(p, App.filt);
-    const vis = (p) => p.from <= k && (p.to === undefined || p.to > k) && F(p);
+    App.subs = App.ui.subs && !q.on ? GW.subSteps(B, k) : null;
+    if (App.subs) App.sub = o.subEnd ? App.subs.length - 1 : Math.max(0, Math.min(App.subs.length - 1, o.sub != null ? o.sub : changed ? 0 : App.sub));
+    else App.sub = 0;
+    const lim = App.subs ? App.subs[App.sub].maxSeq : Infinity;
+    const minNew = App.subs && App.sub > 0 ? App.subs[App.sub - 1].maxSeq : -Infinity;
+    const ENG_HIDE = { aux: 1, auxplanes: 1, rays: 1, text: 1 };
+    const F = (p) => GW.passFilter(p, App.filt) && !(App.eng && ENG_HIDE[GW.catOf(p)]);
+    const vis = (p) => p.from <= k && (p.to === undefined || p.to > k) && F(p) && !(p.from === k && p.seq != null && p.seq > lim);
+    const isNew = (p) => p.from === k && (p.seq == null || p.seq > minNew);
     let p2 = B.p2.filter(vis),
       p3 = B.p3.filter(vis);
     if (hideNew) {
       p2 = p2.filter((p) => p.from !== k || (q.shown || []).indexOf(p) >= 0);
       p3 = p3.filter((p) => p.from !== k);
     }
-    v3.setPrims(p3, { animate: o.anim, step: k });
-    v2.setPrims(p2, { animate: o.anim && !hideNew, step: k });
+    v3.setPrims(p3, { animate: o.anim, step: k, isNew });
+    v2.setPrims(p2, { animate: o.anim && !hideNew, step: k, isNew });
     const src = new Set(st.src || []);
     v3.setSrc(src);
     v2.setSrc(src);
-    $('#stepNo').textContent = k + 1 + ' / ' + B.steps.length;
+    $('#stepNo').textContent = k + 1 + ' / ' + B.steps.length + (App.subs ? ' · ' + (App.sub + 1) + '/' + App.subs.length : '');
+    subUI();
     $('#stepTitle').innerHTML = st.title || '';
     $('#sCo').innerHTML = st.co || '';
     $('#sJak').innerHTML = st.jak || '';
@@ -948,7 +996,26 @@
   App.show = show;
   App.rebuild = rebuild;
 
-  $('#bPrev').onclick = () => show(App.k - 1, { anim: false, cam: true });
+  function subUI() {
+    const sb = $('#subBox');
+    if (!App.subs) {
+      sb.style.display = 'none';
+      return;
+    }
+    const n = App.subs.length,
+      j = App.sub;
+    sb.style.display = 'block';
+    sb.innerHTML =
+      '<h4>✍ Rysujemy: podkrok ' + (j + 1) + ' z ' + n + ' <span class="subdots">' + App.subs.map((_, i) => '<i class="' + (i <= j ? 'on' : '') + '"></i>').join('') + '</span><span class="subnav"><button type="button" id="subPrev" aria-label="Poprzedni podkrok">◀</button><button type="button" id="subNext" aria-label="Następny podkrok">▶</button><button type="button" id="subAll">cały krok</button></span></h4>' +
+      GW.draftText(App.subs[j], App.B, App);
+    $('#subPrev').onclick = () => $('#bPrev').click();
+    $('#subNext').onclick = () => $('#bNext').click();
+    $('#subAll').onclick = () => show(App.k, { subEnd: true, anim: false, keepUnfold: true });
+  }
+  $('#bPrev').onclick = () => {
+    if (App.subs && App.sub > 0) return show(App.k, { sub: App.sub - 1, anim: false, keepUnfold: true });
+    show(App.k - 1, { anim: false, cam: true, subEnd: true });
+  };
   $('#bNext').onclick = () => {
     const q = App.quiz;
     if (q.on && !q.revealed.has(App.k) && q.targets.length) {
@@ -956,7 +1023,8 @@
       q.i = q.targets.length;
       return quizAdvance();
     }
-    show(App.k + 1, { anim: true, cam: true });
+    if (App.subs && App.sub < App.subs.length - 1) return show(App.k, { sub: App.sub + 1, anim: true, keepUnfold: true });
+    show(App.k + 1, { anim: true, cam: true, sub: 0 });
   };
   function stopPlay() {
     if (App.playing) clearInterval(App.playing);
@@ -968,9 +1036,9 @@
     $('#bPlay').textContent = '❚❚';
     if (App.k >= App.B.steps.length - 1) show(0, { anim: true, cam: true });
     App.playing = setInterval(() => {
-      if (App.k >= App.B.steps.length - 1) return stopPlay();
-      show(App.k + 1, { anim: true, cam: true });
-    }, 4200);
+      if (App.k >= App.B.steps.length - 1 && !(App.subs && App.sub < App.subs.length - 1)) return stopPlay();
+      $('#bNext').click();
+    }, 3000);
   };
 
   /* ---------- tryb kartki ---------- */
@@ -1018,7 +1086,10 @@
         ['R', 'tryb „Rozwiąż sam”'],
         ['L', 'losuj wariant zadania'],
         ['K', 'tryb kartki (czarno-biały rysunek)'],
-        ['M', 'miarka'],
+        ['M', 'miarka (dwa kliknięcia)'],
+        ['E', 'rysunek techniczny (ramka, tabliczka, linie wg norm)'],
+        ['W', 'wymiary na rysunku 2D'],
+        ['G', 'wygeneruj nowe zadanie'],
         ['T', 'ściągawka teorii'],
         ['D', 'dopasuj rysunek 2D'],
         ['Esc', 'zamknij okno'],
@@ -1114,8 +1185,11 @@
     const k = e.key;
     if (k === 'ArrowRight') $('#bNext').click();
     else if (k === 'ArrowLeft') $('#bPrev').click();
-    else if (k === 'Home') show(0, { anim: false, cam: true });
-    else if (k === 'End') show(App.B.steps.length - 1, { anim: false, cam: true });
+    else if (k === 'Home') show(0, { anim: false, cam: true, subEnd: true });
+    else if (k === 'End') show(App.B.steps.length - 1, { anim: false, cam: true, subEnd: true });
+    else if (k === 'e' || k === 'E') $('#bEng').click();
+    else if (k === 'w' || k === 'W') $('#bDims').click();
+    else if (k === 'g' || k === 'G') $('#genGo') && $('#genGo').click();
     else if (k === ' ') {
       e.preventDefault();
       $('#bPlay').click();
@@ -1136,6 +1210,127 @@
     else if (k === 'd' || k === 'D') fit2();
   });
 
+
+  /* ---------- rysunek techniczny, wymiary, ustawienia ---------- */
+  function engBox() {
+    const b = App.fitBox || [0, 0, 100, 100];
+    const m = App.dims ? 16 : 4;
+    return [b[0] - m, b[1] - m, b[2] + m, b[3] + m];
+  }
+  function setEng(on) {
+    App.eng = on;
+    store.set('eng', on);
+    document.body.classList.toggle('eng', on);
+    v2.eng = on;
+    $('#bEng').classList.toggle('on', on);
+    $('#bEng').setAttribute('aria-pressed', String(on));
+    show(App.k, { anim: false, cam: false, keepUnfold: true });
+    if (on) {
+      const fr = GW.engSheet(App, engBox()).find((p) => p.id === 'frameOuter');
+      if (fr) {
+        const bb = GW.G.bbox2(fr.pts);
+        v2.fit([bb[0] - 4, bb[1] - 4, bb[2] + 4, bb[3] + 4]);
+      }
+    } else fit2();
+  }
+  function setDims(on) {
+    App.dims = on;
+    store.set('dims', on);
+    $('#bDims').classList.toggle('on', on);
+    $('#bDims').setAttribute('aria-pressed', String(on));
+    refreshOverlay();
+  }
+  $('#bEng').onclick = () => setEng(!App.eng);
+  $('#bDims').onclick = () => setDims(!App.dims);
+  $('#bUI').onclick = () =>
+    GW.openSettings(App, store, () => {
+      show(App.k, { anim: false, cam: false, keepUnfold: true });
+    });
+  App.syncParamUI = () => syncParamUI();
+  App.buildOnce = buildOnce;
+
+  /* ---------- generator zadań ---------- */
+  function buildGen() {
+    const L = App.lesson;
+    const box = $('#genbox');
+    const g = L.gen || GW.defaultGen(L);
+    if (!App.genCfg || App.genCfg.lid !== L.id) {
+      App.genCfg = { lid: L.id, level: '2', type: g.types ? g.types[0][0] : null };
+      (g.opts || []).forEach((o) => (App.genCfg[o.k] = o.v));
+    }
+    const c = App.genCfg;
+    let html = '<div class="prmsel">Poziom trudności: <select id="genLevel" aria-label="Poziom trudności">' + GW.LEVELS.map(([v, t]) => '<option value="' + v + '"' + (v === c.level ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div>';
+    if (g.types) html += '<div class="prmsel">Typ zadania: <select id="genType" aria-label="Typ zadania">' + g.types.map(([v, t]) => '<option value="' + v + '"' + (v === c.type ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div>';
+    (g.opts || []).forEach((o) => {
+      if (o.type === 'check') html += '<label class="prmsel" style="display:block"><input type="checkbox" data-go="' + o.k + '"' + (c[o.k] ? ' checked' : '') + '> ' + o.l + '</label>';
+      else if (o.type === 'select') html += '<div class="prmsel">' + o.l + ': <select data-go="' + o.k + '" aria-label="' + o.l + '">' + o.choices.map(([v, t]) => '<option value="' + v + '"' + (String(v) === String(c[o.k]) ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div>';
+      else if (o.type === 'range') html += '<div class="prm"><span>' + o.l + '</span><input type="range" data-go="' + o.k + '" aria-label="' + o.l + '" min="' + o.min + '" max="' + o.max + '" step="' + (o.step || 1) + '" value="' + c[o.k] + '"><output>' + c[o.k] + '</output></div>';
+    });
+    html += '<div class="spbtns"><button type="button" id="genGo">🎲 Generuj zadanie (G)</button><button type="button" id="genBack">Wróć do zadania z listy</button></div><div id="genres" class="spnote">' + (c.msg || (g.note || 'Wybierz poziom' + (g.types ? ' i typ' : '') + ', a następnie kliknij „Generuj” – wszystkie dane (punkty, bryły, wymiary, teren…) zostaną wylosowane z zachowaniem poprawności zadania.')) + '</div>';
+    box.innerHTML = html;
+    $('#genLevel').onchange = (e) => (c.level = e.target.value);
+    if ($('#genType')) $('#genType').onchange = (e) => (c.type = e.target.value);
+    box.querySelectorAll('[data-go]').forEach((el) => {
+      el.oninput = el.onchange = () => {
+        c[el.dataset.go] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? +el.value : el.value;
+        if (el.type === 'range') el.nextElementSibling.textContent = el.value;
+      };
+    });
+    $('#genGo').onclick = () => generate();
+    $('#genBack').onclick = () => {
+      App.P = {};
+      (L.params || []).forEach((p) => (App.P[p.k] = p.v));
+      (L.opts || []).forEach((p) => (App.P[p.k] = p.v));
+      c.msg = '';
+      buildParams();
+      buildGen();
+      rebuild({ first: true });
+      show(0, { anim: true, cam: true, firstCam: true });
+    };
+  }
+  function generate() {
+    const L = App.lesson;
+    const g = L.gen || GW.defaultGen(L);
+    const c = App.genCfg;
+    const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
+    let found = null;
+    for (let t = 0; t < 60 && !found; t++) {
+      const R = GW.rng(seed + t * 7919);
+      let patch;
+      try {
+        patch = g.make(c, R, App.P);
+      } catch (e) {
+        continue;
+      }
+      if (!patch) continue;
+      const P = Object.assign({}, App.P, patch);
+      const B = buildOnce(null, P);
+      const ok = !B._err && B.steps.length >= 3 && B.data.ok !== false && !B.steps.some((s) => /^Brak/.test(s.title || '')) && (!g.valid || g.valid(B, c, P));
+      if (ok) found = patch;
+    }
+    if (!found) {
+      c.msg = '⚠ Nie udało się wylosować poprawnego zadania przy tych ustawieniach – spróbuj ponownie albo zmień poziom/typ.';
+      buildGen();
+      return;
+    }
+    delete document.body.dataset.err;
+    Object.assign(App.P, found);
+    c.msg = '✔ ' + (found._desc || 'Wygenerowano nowe zadanie.') + ' Przejdź kroki od początku (→) albo włącz „Rozwiąż sam”.';
+    App.quiz.revealed = new Set();
+    buildParams();
+    buildGen();
+    rebuild({ first: true });
+    show(0, { anim: true, cam: true, firstCam: true });
+  }
+  App.generate = generate;
+
+  GW.applyUI(App, App.ui);
+  if (App.eng) {
+    document.body.classList.add('eng');
+    v2.eng = true;
+    $('#bEng').classList.add('on');
+  }
+  if (App.dims) $('#bDims').classList.add('on');
   buildMods();
   applyCols();
   setLayout(layout);
@@ -1143,5 +1338,5 @@
   const [hash, hstep] = location.hash.slice(1).split('/');
   const L0 = GW.lessons.find((l) => l.id === hash);
   selectModule(L0 ? L0.mod : 1, L0 ? L0.id : null);
-  if (hstep) show(+hstep - 1, { anim: false, cam: true });
+  if (hstep) show(+hstep - 1, { anim: false, cam: true, subEnd: true });
 })();

@@ -150,6 +150,14 @@
     cams: [
       { l: 'Kierunek rzutowania', cam: (c) => ({ dir: c.data.ax.dir, fov: 6, target: c.data.center }), title: 'Patrz dokładnie w kierunku rzutowania aksonometrycznego (prawie rzut równoległy)' },
     ],
+    dims(c) {
+      const d = c.data;
+      if (!d.ax || !d.abc) return [];
+      const M = d.ax.map,
+        [a, b, cc] = d.abc,
+        C = M([a / 2, b / 2, cc / 2]);
+      return [GW.dimOut(M([0, b, 0]), M([a, b, 0]), C, 8, String(a), 'dima'), GW.dimOut(M([a, b, 0]), M([a, 0, 0]), C, 8, String(b), 'dimb'), GW.dimOut(M([0, b, 0]), M([0, b, cc]), C, 8, String(cc), 'dimc')];
+    },
     special: {
       note: '<b>Aksonometria jako rzut równoległy.</b> Włącz rzutnię i promienie – zobaczysz, że rysunek aksonometryczny to zwykły rzut bryły <i>razem z osiami układu</i> na jedną płaszczyznę. W izometrii i dimetrii prostokątnej promienie są ⟂ rzutni, w dimetrii ukośnej – ukośne (rzutnia ∥ xz).',
       ui: [
@@ -187,7 +195,7 @@
       const blk = lBlock(p.a, p.b, p.c, Math.min(p.a2, p.a - 5), Math.min(p.c2, p.c - 5));
       const center = [p.a / 2, p.b / 2, p.c / 2];
       const size = Math.max(p.a, p.b, p.c);
-      B.data = { ax, verts: blk.verts, edges: blk.edges, center, size };
+      B.data = { ax, verts: blk.verts, edges: blk.edges, center, size, abc: [p.a, p.b, p.c] };
       const M = ax.map;
       const L = size * 1.35;
       B.step({
@@ -734,6 +742,17 @@
       { k: 'dB', l: 'przesuń B po krawędzi', min: -0.25, max: 0.25, step: 0.01, v: 0 },
       { k: 'dC', l: 'przesuń C po krawędzi', min: -0.25, max: 0.25, step: 0.01, v: 0 },
     ],
+    dims(c) {
+      const ax = c.data.ax;
+      if (!ax) return [];
+      const M = ax.map,
+        C = M([30, 30, 30]);
+      return [
+        GW.dimOut(M([0, 60, 0]), M([60, 60, 0]), C, 8, '60', 'dimx'),
+        GW.dimOut(M([60, 60, 0]), M([60, 0, 0]), C, 8, '60', 'dimy'),
+        GW.dimOut(M([0, 60, 0]), M([0, 60, 60]), C, 8, '60', 'dimz'),
+      ];
+    },
     mistakes: ['Boki przekroju leżące na <b>ścianach równoległych</b> muszą być równoległe – to najszybsza kontrola.', 'Punkt śladowy (przecięcie boku przekroju z <i>przedłużeniem</i> krawędzi) może leżeć poza bryłą – to normalne, służy tylko do dalszej konstrukcji.', 'Grubo rysujemy tylko część pod płaszczyzną; część odciętą najwyżej cienko.'],
     algo:
       '<ol><li><b>Punkty dane</b> A, B, C leżą na krawędziach. Dwa punkty leżące w tej samej ścianie łączymy – to bok przekroju.</li>' +
@@ -744,7 +763,7 @@
     build(p, B) {
       const ax = axon(p.ax);
       const M = ax.map;
-      const D = L4[p.set] || L4.a;
+      const D = p.set === 'gen' && p.gen ? { parts: () => p.gen.parts.map((s) => GW.specPoly(s)), A: p.gen.A, B: p.gen.B, C: p.gen.C, d: p.gen.d } : L4[p.set] || L4.a;
       const U = new G.Union(D.parts());
       const pt = (q, dt) => {
         const [x, y, z, e0, e1] = q;

@@ -69,15 +69,16 @@
           this.cur = id;
           this.onHover && this.onHover(id, e);
         } else if (id && this.onMove) this.onMove(e);
-        if (this.onBgMove) {
-          const r = this.svg.getBoundingClientRect();
-          this.onBgMove([(e.clientX - r.left - this.tx) / this.k, (e.clientY - r.top - this.ty) / this.k], e);
-        }
+        const r = this.svg.getBoundingClientRect();
+        const SP = [(e.clientX - r.left - this.tx) / this.k, (e.clientY - r.top - this.ty) / this.k];
+        if (this.onBgMove) this.onBgMove(SP, e);
+        if (this.onCursor) this.onCursor(SP, e, id, [e.clientX - r.left, e.clientY - r.top]);
       });
       this.svg.addEventListener('mouseleave', () => {
         this.cur = null;
         this.onHover && this.onHover(null, null);
         this.onBgMove && this.onBgMove(null);
+        this.onCursor && this.onCursor(null);
       });
       this.svg.addEventListener('click', (e) => {
         if (this.dragMoved) return;
@@ -111,8 +112,10 @@
     setPrims(prims, o = {}) {
       this.prims = prims;
       this.animStep = o.animate ? o.step : -1;
+      this.isNewFn = o.animate ? o.isNew || ((p) => p.from === o.step) : null;
       this.render(true);
       this.animStep = -1;
+      this.isNewFn = null;
     }
     setOverlay(prims) {
       this.ov = prims || [];
@@ -138,6 +141,7 @@
     }
     /* ---------- renderowanie ---------- */
     render(fresh) {
+      this.svg.style.setProperty('--k', this.k.toFixed(4));
       const out = [];
       const labels = [];
       const placed = [];
@@ -145,7 +149,7 @@
         const cls = ['s-' + (p.s || 'given')];
         if (this.hl.has(p.id)) cls.push('hl');
         if (this.src.has(p.id)) cls.push('src');
-        const isNew = fresh && p.from === this.animStep;
+        const isNew = fresh && !!this.isNewFn && this.isNewFn(p);
         const idA = p.id ? ' data-id="' + p.id + '"' : '';
         const style = (p.col ? 'stroke:' + p.col + ';' : '') + (p.w ? 'stroke-width:' + p.w + 'px;' : '');
         if (p.t === 'seg') {
@@ -228,7 +232,53 @@
           if (p.label) labels.push({ p: q, txt: p.label, id: p.id, cls: 'lab ' + (p.labCls || '') + (p.s === 'res' ? ' res' : ''), pt: true, lo: p.lo });
         } else if (p.t === 'text') {
           const q = this.S(p.p);
-          out.push('<text class="' + cls.join(' ') + ' txt"' + idA + ' x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '" text-anchor="' + (p.anchor || 'middle') + '" dominant-baseline="middle">' + GW.labSVG(p.txt) + '</text>');
+          const fsz = p.mm ? 'font-size:' + Math.max(6, p.mm * this.k).toFixed(1) + 'px;' + (p.bold ? 'font-weight:700;' : '') : '';
+          const rot = p.rot ? ' transform="rotate(' + p.rot + ' ' + q[0].toFixed(1) + ' ' + q[1].toFixed(1) + ')"' : '';
+          out.push('<text class="' + cls.join(' ') + ' txt"' + idA + rot + ' style="' + fsz + '" x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '" text-anchor="' + (p.anchor || 'middle') + '" dominant-baseline="' + (p.base || 'middle') + '">' + GW.labSVG(p.txt) + '</text>');
+        } else if (p.t === 'dim') {
+          // wymiar wg PN-EN ISO 129: linie pomocnicze, linia wymiarowa z grotami, liczba nad linią
+          const A = p.a,
+            Bq = p.b;
+          const L = V.dist(A, Bq);
+          if (L < 1e-6) return;
+          const u = V.mul(V.sub(Bq, A), 1 / L);
+          const n = V.perp2(u);
+          const off = p.off || 0;
+          const sg = off >= 0 ? 1 : -1;
+          const a1 = V.add(A, V.mul(n, off)),
+            b1 = V.add(Bq, V.mul(n, off));
+          const segs = [];
+          if (Math.abs(off) > 1.2) {
+            segs.push([V.add(A, V.mul(n, sg * 1)), V.add(A, V.mul(n, off + sg * 2))]);
+            segs.push([V.add(Bq, V.mul(n, sg * 1)), V.add(Bq, V.mul(n, off + sg * 2))]);
+          }
+          const al = 2.5,
+            aw = 0.55;
+          const outside = L < 2.4 * al;
+          segs.push(outside ? [V.add(a1, V.mul(u, -al * 2.2)), V.add(b1, V.mul(u, al * 2.2))] : [a1, b1]);
+          const arrow = (tip, dir) => {
+            const base = V.add(tip, V.mul(dir, al));
+            const P1 = this.S(V.add(base, V.mul(n, aw))),
+              P2 = this.S(V.sub(base, V.mul(n, aw))),
+              T0 = this.S(tip);
+            return 'M' + T0[0].toFixed(1) + ' ' + T0[1].toFixed(1) + 'L' + P1[0].toFixed(1) + ' ' + P1[1].toFixed(1) + 'L' + P2[0].toFixed(1) + ' ' + P2[1].toFixed(1) + 'Z';
+          };
+          const d = segs.map((s) => {
+            const a = this.S(s[0]),
+              b = this.S(s[1]);
+            return 'M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + 'L' + b[0].toFixed(1) + ' ' + b[1].toFixed(1);
+          }).join('');
+          out.push('<path class="s-dim' + (this.hl.has(p.id) ? ' hl' : '') + '"' + idA + ' d="' + d + '"/>');
+          out.push('<path class="dimarr"' + idA + ' d="' + arrow(a1, outside ? V.mul(u, -1) : u) + arrow(b1, outside ? u : V.mul(u, -1)) + '"/>');
+          if (p.id && !p.noPick) out.push('<path class="hit"' + idA + ' d="' + d + '"/>');
+          const txt = p.txt != null ? String(p.txt) : GW.fmtLen(L);
+          const fs = Math.max(9, (p.mm || 3.5) * this.k);
+          const mid = V.add(V.mid(a1, b1), V.mul(n, sg * (0.9 + (p.mm || 3.5) * 0.5)));
+          const q = this.S(mid);
+          let ang = (Math.atan2(u[1], u[0]) * 180) / Math.PI;
+          if (ang > 90.01) ang -= 180;
+          if (ang < -89.99) ang += 180;
+          out.push('<text class="dimtxt' + (this.hl.has(p.id) ? ' hl' : '') + '"' + idA + ' style="font-size:' + fs.toFixed(1) + 'px" text-anchor="middle" dominant-baseline="middle" transform="rotate(' + ang.toFixed(2) + ' ' + q[0].toFixed(1) + ' ' + q[1].toFixed(1) + ')" x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '">' + GW.labSVG(txt) + '</text>');
         } else if (p.t === 'tick') {
           // znacznik "przeniesienia cyrklem": łuk przy końcu odcinka
           const a = this.S(p.a),
@@ -286,9 +336,10 @@
         [16, 20],
         [-16, 20],
       ];
+      const lsc = this.eng ? Math.max(9, 3.5 * this.k) / 13 : this.ls || 1;
       labels.forEach((L) => {
-        const w = GW.labLen(L.txt) * 7.2 + 4,
-          h = 13;
+        const w = GW.labLen(L.txt) * 7.2 * lsc + 4,
+          h = 13 * lsc;
         let best = null;
         const list = L.lo ? [L.lo].concat(cand) : L.fixed ? [L.fixed] : cand;
         for (const c of list) {

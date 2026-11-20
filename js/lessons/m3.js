@@ -212,10 +212,24 @@
   }
 
   /* ---------- zestawy zadań ---------- */
+  function fromSpec(s, d, sc) {
+    const m = (v) => v * sc;
+    if (s.k === 'cone') return cone(s.cx + d[0], s.cy + d[1], s.z0 + d[2], m(s.H), m(s.R), m(s.rt || 0));
+    if (s.k === 'cylV') return cylV(s.cx + d[0], s.cy + d[1], s.z0 + d[2], m(s.H), m(s.R));
+    if (s.k === 'sphere') return sphere(s.cx + d[0], s.cy + d[1], s.cz + d[2], m(s.r), s.zc == null ? -Infinity : s.zc + d[2]);
+    if (s.k === 'cylH') return cylH(s.ax, s.a + (s.ax === 'y' ? d[0] : d[1]), s.zc + d[2], m(s.r), s.t0 + (s.ax === 'y' ? d[1] : d[0]), s.t1 + (s.ax === 'y' ? d[1] : d[0]));
+    if (s.k === 'poly') {
+      const sp = JSON.parse(JSON.stringify(s.spec));
+      const P = GW.specPoly(sp, d);
+      return polySolid(P, s.names || null, s.title);
+    }
+    return null;
+  }
   function presets(p) {
     const s1 = (p.sc1 || 100) / 100,
       s2 = (p.sc2 || 100) / 100;
     const d = [p.dx || 0, p.dy || 0, p.dz || 0];
+    if (p.set === 'gen' && p.gen) return { A: fromSpec(p.gen.A, [0, 0, 0], s1), B: fromSpec(p.gen.B, d, s2), title: p.gen.title, mixed: !!p.gen.mixed };
     if (p.set === 'L3z1') {
       const A = cylH('x', 45 + d[1], 24 + d[2], 18 * s2, 10 + d[0], 70 + d[0]);
       const Bc = cone(70, 45, 0, 70 * s1, 40 * s1, 15 * s1);

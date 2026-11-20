@@ -67,6 +67,8 @@
   GW.labLen = (s) => GW.parseLab(String(s)).reduce((a, p) => a + (p.t === 'n' ? p.s.length : p.s.length * 0.7), 0);
   /* skrót do HTML w opisach kroków */
   GW.h = (s) => GW.labHTML(s);
+  /* liczba w mm: całkowita bez przecinka, inaczej 1 miejsce po przecinku */
+  GW.fmtLen = (v) => (Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : (Math.round(v * 10) / 10).toFixed(1).replace('.', ','));
 
   /* ===================================================================
      System rzutni.  Każda rzutnia: O3 (punkt osi), U3 (kierunek osi),
@@ -226,6 +228,7 @@
     }
     a3(p) {
       p.from = this.cur;
+      p.seq = this.seqN = (this.seqN || 0) + 1;
       this.p3.push(p);
       if (p.p) this.pts3.push(p.p);
       if (p.a) this.pts3.push(p.a, p.b);
@@ -234,6 +237,7 @@
     }
     a2(p) {
       p.from = this.cur;
+      p.seq = this.seqN = (this.seqN || 0) + 1;
       this.p2.push(p);
       return p;
     }

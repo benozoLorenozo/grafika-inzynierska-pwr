@@ -1,9 +1,9 @@
-# Geometria Wykreślna – trener
+# GrafInż PWr – portal edukacyjny grafiki inżynierskiej
 
-Interaktywna pomoc do nauki geometrii wykreślnej i grafiki inżynierskiej (1. semestr studiów technicznych).
+Nieoficjalny, studencki portal do nauki grafiki inżynierskiej i geometrii wykreślnej (1. semestr studiów technicznych), przygotowany z myślą o studentach Politechniki Wrocławskiej. Nie jest oficjalnym materiałem uczelni.
 Każda konstrukcja jest rozpisana krok po kroku. Model przestrzenny 3D i rysunek wykreślny 2D są ze sobą powiązane.
 
-**Strona:** https://benozolorenozo.github.io/geometria-wykreslna/ · [Informacje, prywatność, dostępność](informacje.html)
+**Strona:** https://benozolorenozo.github.io/grafika-inzynierska-pwr/ · [Informacje, prywatność, dostępność](informacje.html)
 
 ---
 
@@ -29,10 +29,13 @@ Elementy, z których powstaje dany krok, są wyróżniane („skąd to się wzi�
 Zadania odtworzone z list ćwiczeniowych są oznaczone 📋. Uzupełniają je przykłady z literatury.
 
 ### Metodyka i formy pracy
-- **Tryb kroków** z osią czasu i autoodtwarzaniem.
+- **Tryb kroków** z osią czasu i autoodtwarzaniem. Kroki, w których powstaje wiele punktów, mają **podkroki** – punkty pojawiają się pojedynczo z instrukcją rysowania (co zmierzyć cyrklem, ile milimetrów odłożyć, jaką linią rysować).
+- **Wbudowana miarka** – współrzędne przy kursorze, a po najechaniu na element: współrzędne punktu, odległość rzutu od osi, długość na rysunku i rzeczywista.
+- **Rysunek techniczny** – widok 2D zgodny z normami (rodzaje i grubości linii, pismo, ramka, tabliczka rysunkowa) oraz automatyczne **wymiarowanie**.
+- **Generator zadań** – dla każdej lekcji: poziom trudności, typ zadania i opcje; wszystkie dane (punkty, bryły, teren, platformy, drogi) losowane z zachowaniem poprawności.
 - **Tryb „Co jeśli?”** – zmiana danych przelicza całą konstrukcję. Można też wylosować nowy, poprawny wariant zadania.
 - **Tryb „Rozwiąż sam”** – wskazujesz na rysunku położenie kolejnych punktów, aplikacja ocenia odchyłkę.
-- **Tryb „Kartka”** – czarno-biały rysunek z grubościami linii jak na kolokwium.
+- **Tryb „Kartka”** – czarno-biały rysunek z grubościami linii jak na kolokwium; **⚙ Wygląd** – motyw (jasny, ciemny, wysoki kontrast, sepia), kolory, wielkość tekstu i linii.
 - **Ściągawka teorii** i lista **typowych błędów** dla każdego modułu.
 
 ### Notacja
@@ -69,5 +72,7 @@ To prywatny projekt edukacyjny, a nie oficjalny materiał uczelni. Treści mogą
   - `js/view3d.js`, `js/view2d.js` – widoki 3D i 2D;
   - `js/app.js` – interfejs;
   - `js/teoria.js` – ściągawka i typowe błędy;
+  - `js/tools.js` – miarka, podkroki, wymiary, arkusz techniczny, motywy;
+  - `js/generators.js` – generatory zadań;
   - `js/lessons/m1–m6.js` – lekcje.
 - **Dane użytkownika:** tylko ustawienia interfejsu w `localStorage` (klucze `gw.*`). Brak ciasteczek i analityki.

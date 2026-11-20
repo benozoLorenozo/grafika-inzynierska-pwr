@@ -583,6 +583,27 @@
       { l: '👁 Widok z oka', cam: (c) => ({ dir: [0, 1, 0], target: [c.data.O[0], 0, c.data.O[2]], dist: c.data.O[1], fov: 70 }), title: 'Kamera w oku – obraz pokrywa się z bryłą' },
       { l: 'Z boku aparatu', cam: { dir: [1, 0.55, 0.45] } },
     ],
+    coords2(c, P) {
+      const L = c.data.layout;
+      if (!L) return '';
+      const f = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
+      if (P[1] > L.Yt + 4) return 'perspektywa:  X od O^τ = ' + f(P[0] - L.gx) + '   wys. nad p = ' + f(L.Yp - P[1]);
+      if (L.zmax > 0 && P[1] < L.Yt - L.tmax - 6) return (P[0] > L.Xs - 2 ? 'rzut boczny:  t = ' + f(L.Xs + L.tmax - P[0]) : 'rzut pionowy:  x od g′ = ' + f(P[0] - L.gx)) + '   z = ' + f(L.Yf - P[1]);
+      return 'rzut poziomy:  x od g′ = ' + f(P[0] - L.gx) + '   t (za τ′) = ' + f(L.Yt - P[1]);
+    },
+    dims(c) {
+      const L = c.data.layout,
+        vs = c.data.verts;
+      if (!L || !vs) return [];
+      const xs = vs.map((q) => q[0]).concat([L.gx]);
+      const ts = [0].concat(vs.map((q) => -q[1]));
+      const zs = [0].concat(vs.map((q) => q[2]));
+      const xm = Math.min(...vs.map((q) => q[0]));
+      let d = GW.dimChain(xs, (a, b) => ({ a: [a, L.Yt], b: [b, L.Yt] }), 7, 'dimx');
+      d = d.concat(GW.dimChain(ts, (a, b) => ({ a: [xm, L.Yt - a], b: [xm, L.Yt - b] }), -8, 'dimt'));
+      if (L.zmax > 0) d = d.concat(GW.dimChain(zs, (a, b) => ({ a: [xm, L.Yf - a], b: [xm, L.Yf - b] }), -8, 'dimz'));
+      return d;
+    },
     mistakes: ['Głębokość t odkładamy na p od punktu T w stronę <b>przeciwną</b> do G (G po prawej → odkładamy w lewo).', 'Wysokości odkładamy <b>na tle</b> (w punkcie T, w prawdziwej wielkości), a dopiero potem prowadzimy do O<sup>τ</sup>.', 'Odległość O<sup>τ</sup> od p to wysokość horyzontu h, a odległość G od O<sup>τ</sup> to głębokość tłowa δ – nie myl ich.'],
     algo:
       '<ol><li><b>Aparat</b>: podstawa tła p, horyzont h (w odległości h od p), punkt główny <b>O<sup>τ</sup></b> nad stanowiskiem g′, punkt odległości <b>G</b> na h w odległości δ od O<sup>τ</sup>.</li>' +
@@ -591,7 +612,7 @@
       '<li><b>Wysokość</b> z: na tle w punkcie T odkładamy prawdziwą wysokość (T<sub>z</sub>), prosta T<sub>z</sub>–O<sup>τ</sup>; pion z A<sup>s</sup> wyznacza punkt na wysokości z.</li>' +
       '<li>Łączymy punkty w krawędzie, ustalamy widoczność (z oka).</li></ol>',
     build(p, B) {
-      const cfg = PV[p.set] || PV.L6Z1;
+      const cfg = p.set === 'gen' && p.gen ? Object.assign({}, p.gen, { parts: p.gen.parts ? () => p.gen.parts.map((s) => GW.specPoly(s)) : null }) : PV[p.set] || PV.L6Z1;
       const hh = cfg.h + (p.dh || 0),
         dd = cfg.d + (p.dd || 0);
       const gs = p.gs === 'auto' ? cfg.gs : +p.gs;
@@ -633,7 +654,7 @@
         Gp = [gx + gs * dd, Yh];
       const fitX = [Math.min(xmin, Gp[0], gx - 10) - 12, Math.max(xmax, Gp[0], Xs + tmax + 5) + 12];
       B.frame2 = [fitX[0], (zmax ? Yf - zmax : Yt - tmax) - 14, fitX[1], Yp + 18];
-      B.data = { O, verts: verts3 };
+      B.data = { O, verts: verts3, layout: { Yt, Yf, Yh, Yp, gx, Xs, tmax, zmax, xmin } };
       B.step({
         title: 'Dane: rzuty prostokątne, τ′, g′, h = ' + G.f0(hh) + ', δ = ' + G.f0(dd),
         co: cfg.n.replace('📋 ', '') + '. Dane są rzuty prostokątne (wymiary w mm), ślad tła <b>τ′</b>, stanowisko <b>g′</b>, wysokość horyzontu <b>h = ' + G.f0(hh) + '</b> i głębokość tłowa <b>δ = ' + G.f0(dd) + '</b>.',

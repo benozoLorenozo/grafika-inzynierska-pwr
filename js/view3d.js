@@ -88,6 +88,7 @@
       dom.addEventListener('mouseleave', () => {
         this.lastHoverId = null;
         this.onHover && this.onHover(null, null);
+        this.onCursor && this.onCursor(null);
       });
       dom.addEventListener('click', (e) => {
         const o = this.pickObj(e);
@@ -307,7 +308,7 @@
       prims.forEach((p) => {
         const obj = this.build(p);
         if (!obj) return;
-        if (o.animate && p.from === o.step && !p.isPlane) obj.userData.born = now;
+        if (o.animate && (o.isNew ? o.isNew(p) : p.from === o.step) && !p.isPlane) obj.userData.born = now;
         this.group(p.pl || 'space').add(obj);
         this.objs.push(obj);
       });
@@ -496,9 +497,11 @@
       this.ray.setFromCamera(this.mouse, this.camera);
       this.ray.params.Line.threshold = this.unit * 0.9;
       const hits = this.ray.intersectObjects(this.pickables(), false);
+      this.lastHit = null;
       if (!hits.length) return null;
       let best = null,
-        bp = -1;
+        bp = -1,
+        bh = null;
       hits.forEach((h) => {
         let o = h.object;
         let top = o;
@@ -509,14 +512,48 @@
         if (pr > bp) {
           bp = pr;
           best = o;
+          bh = h;
         }
       });
+      this.lastHit = bh ? bh.point.clone() : null;
       return best;
+    }
+    /* punkt pod kursorem w układzie GW (trafiony obiekt albo płaszczyzna z = 0) */
+    cursorGW() {
+      let w = this.lastHit;
+      if (!w) {
+        w = new THREE.Vector3();
+        if (!this.ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), w)) return null;
+      }
+      return [w.x, w.z, w.y / this.zs];
+    }
+    setTheme(t) {
+      const set = (k, c) => {
+        if (ST[k] && c) ST[k].c = new THREE.Color(c).getHex();
+      };
+      set('res', t.res);
+      set('res2', t.res2);
+      set('aux', t.aux);
+      set('aux2', t.aux2);
+      set('dist', t.dist);
+      set('given', t.ink);
+      set('vis', t.ink);
+      set('proj', t.ink);
+      set('projl', t.ink);
+      set('eye', t.aux);
+      set('ray', t.aux);
+      if (t.hl) HL.set(t.hl);
+      if (t.src) SRC.set(t.src);
+      if (t.bg3) this.renderer.setClearColor(new THREE.Color(t.bg3).getHex(), 1);
     }
     pick(e) {
       if (this.dragging) return;
       const o = this.pickObj(e);
       const id = o ? o.userData.prim.id : null;
+      if (this.onCursor) {
+        const r = this.renderer.domElement.getBoundingClientRect();
+        this.onCursor(this.cursorGW(), e, id, [e.clientX - r.left, e.clientY - r.top]);
+      }
       if (id !== this.lastHoverId) {
         this.lastHoverId = id;
         this.onHover && this.onHover(id, e);

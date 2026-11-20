@@ -604,10 +604,11 @@
       '<li>W punkcie przebicia widoczność prostej zmienia się na przeciwną.</li></ol>' +
       '<p class="note">Dlaczego płaszczyzna rzutująca? Bo jeden z jej rzutów jest prostą – znamy tam od razu rzuty wszystkich jej punktów. Zadanie przestrzenne (prosta ∩ płaszczyzna) zamieniamy na płaskie (prosta ∩ prosta w ε).</p>',
     build(p, B) {
-      const set = p.set;
-      const nm = set === 'own' ? ['A', 'B', 'C'] : set === 'L1Z1' ? ['K', 'L', 'M'] : ['R', 'S', 'T'];
-      const triPts = set === 'own' ? [[10, 40, 12], [90, 12, 25], [58, 62, 70]] : set === 'L1Z1' ? L1.KLM.tri : L1.RST.tri;
-      const [D0, E0] = set === 'own' ? [[12, 10, 58], [100, 62, 12]] : set === 'L1Z1' ? L1.KLM.a : L1.RST.a;
+      const gen = p.set === 'gen' && p.gen;
+      const set = gen ? 'gen' : p.set;
+      const nm = gen ? gen.names.split('') : set === 'own' ? ['A', 'B', 'C'] : set === 'L1Z1' ? ['K', 'L', 'M'] : ['R', 'S', 'T'];
+      const triPts = gen ? gen.tri : set === 'own' ? [[10, 40, 12], [90, 12, 25], [58, 62, 70]] : set === 'L1Z1' ? L1.KLM.tri : L1.RST.tri;
+      const [D0, E0] = gen ? gen.a : set === 'own' ? [[12, 10, 58], [100, 62, 12]] : set === 'L1Z1' ? L1.KLM.a : L1.RST.a;
       const [D, E] = moveLine(p, D0, E0);
       const ln = set === 'own' ? 'l' : 'a';
       const tn = nm.join('');
@@ -674,10 +675,11 @@
       '<li>Powrót: odnosząca ⟂ x<sub>14</sub> z P<sup>IV</sup> do a′ → P′; odnosząca ⟂ x<sub>12</sub> do a″ → P″.</li>' +
       '<li>Widoczność – punktami zbieżnymi (w π<sub>4</sub> widać od razu, która część prostej jest nad płaszczyzną).</li></ol>',
     build(p, B) {
+      const gen = p.set === 'gen' && p.gen;
       const isK = p.set === 'L1Z1';
-      const nm = isK ? ['K', 'L', 'M'] : ['R', 'S', 'T'];
-      const pts = isK ? L1.KLM.tri : L1.RST.tri;
-      const [D, E] = moveLine(p, ...(isK ? L1.KLM.a : L1.RST.a));
+      const nm = gen ? gen.names.split('') : isK ? ['K', 'L', 'M'] : ['R', 'S', 'T'];
+      const pts = gen ? gen.tri : isK ? L1.KLM.tri : L1.RST.tri;
+      const [D, E] = moveLine(p, ...(gen ? gen.a : isK ? L1.KLM.a : L1.RST.a));
       const tn = nm.join('');
       B.step({
         title: 'Dane: trójkąt ' + tn + ' i prosta a',
@@ -1043,6 +1045,7 @@
         pierce(B, sys, { A: f.Ta.pts[f.i], B: f.Ta.pts[f.j], name: en, id: en, what: 'krawędź ' + en }, f.Tb, { n1: String(1 + 2 * idx), n2: String(2 + 2 * idx), P: names[idx], eps: idx ? 'φ' : 'ε', pre: 'x' + idx });
         B.S.jak += '<br><i>Sprawdzone krawędzie: ' + tested.join(', ') + '</i>';
       });
+      B.data.ok = found.length >= 2;
       if (found.length < 2) {
         B.step({ title: 'Brak przenikania', co: 'Trójkąty się nie przenikają (znaleziono ' + found.length + ' przebić wewnętrznych).', jak: 'Sprawdzone krawędzie: ' + tested.join(', '), why: 'Zmień położenie DEF w trybie eksperymentu.' });
         return;

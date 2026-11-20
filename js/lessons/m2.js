@@ -86,9 +86,18 @@
     return { s1, s2 };
   }
   function defs(p) {
-    const dx = p.dx,
-      dy = p.dy,
-      dz = p.dz;
+    const dx = p.dx || 0,
+      dy = p.dy || 0,
+      dz = p.dz || 0;
+    if (p.set === 'gen' && p.gen) {
+      const mk = (s, sh) => {
+        const mv = (q) => V.add(q, sh);
+        const r = s.kind === 'pyr' ? mkPyramid(s.base.map(mv), mv(s.apex), s.names) : mkPrism(s.base.map(mv), s.shift, s.names, s.names2);
+        r.title = s.title;
+        return r;
+      };
+      return { s1: mk(p.gen.s1, [0, 0, 0]), s2: mk(p.gen.s2, [dx, dy, dz]) };
+    }
     if (p.set === 'L2L') return typeL(TL[(p.var || 1) - 1], [dx, dy, dz]);
     if (p.set === 'L2R') return typeR(TR[(p.var || 1) - 1], [dx, dy, dz]);
     if (p.set === 'L2z1') return typeR([60, 60, 50, 40, 40, 35, 80], [dx, dy, dz]);
@@ -181,7 +190,7 @@
     lista: 'L2',
     title: '2.1 Przenikanie wielościanów',
     v2title: 'Rzuty Monge’a – wielobok przenikania',
-    needP3: (P) => P.set === 'L2z3' || P.set === 'L2L' || P.set === 'L2R' || P.set === 'L2z1',
+    needP3: (P) => P.set === 'L2z3' || P.set === 'L2L' || P.set === 'L2R' || P.set === 'L2z1' || (P.set === 'gen' && !!P._p3),
     opts: [
       {
         k: 'set',
