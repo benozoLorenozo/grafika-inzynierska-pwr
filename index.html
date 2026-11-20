@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geometria Wykreślna – trener</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">GW · Geometria wykreślna i grafika inżynierska</div>
+  <nav id="mods"></nav>
+</header>
+<div id="lessonbar"></div>
+<main id="main">
+  <aside id="side">
+    <div id="ctrl">
+      <button id="bPrev" title="Strzałka w lewo">◀ Poprzedni krok</button>
+      <button id="bPlay" title="Spacja">▶</button>
+      <button id="bNext" title="Strzałka w prawo">Następny krok ▶</button>
+    </div>
+    <div id="timeline"></div>
+    <div id="stepBox">
+      <div id="stepHead"><span id="stepNo"></span><b id="stepTitle"></b></div>
+      <div class="layer co"><h4>CO kreślimy?</h4><div id="sCo"></div></div>
+      <div class="layer jak"><h4>JAK to wyznaczamy?</h4><div id="sJak"></div></div>
+      <div class="layer why"><h4>DLACZEGO to działa w przestrzeni?</h4><div id="sWhy"></div></div>
+    </div>
+    <details id="specBox" open><summary>Widok specjalny</summary><div id="special"></div></details>
+    <details id="expBox" open><summary>Tryb eksperymentu – „Co jeśli?”</summary><div id="params"></div></details>
+    <details id="algoBox"><summary>Uniwersalny algorytm (metodyka)</summary><div id="algo"></div></details>
+    <div id="legend"></div>
+  </aside>
+  <section id="v3wrap" class="view">
+    <div class="vbar">
+      <b>Przestrzeń 3D</b>
+      <button data-cam="iso">Izometryczny</button>
+      <button data-cam="front">Z przodu</button>
+      <button data-cam="top">Z góry</button>
+      <button data-cam="side">Z boku</button>
+      <span id="camExtra"></span>
+      <span id="unfoldBox"><label>Rozkładanie rzutni <input type="range" id="unfold" min="0" max="1" step="0.01" value="0"></label><span id="unfoldTxt"></span></span>
+    </div>
+    <div id="v3" class="vbody"></div>
+  </section>
+  <section id="v2wrap" class="view">
+    <div class="vbar"><b id="v2title">Rysunek 2D</b><button id="bFit">Dopasuj</button><span class="hint">kółko – zoom, przeciągnij – przesuń</span></div>
+    <div id="v2" class="vbody"></div>
+  </section>
+</main>
+<div id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/math.js"></script>
+<script src="js/core.js"></script>
+<script src="js/view3d.js"></script>
+<script src="js/view2d.js"></script>
+<script src="js/lessons/m1.js"></script>
+<script src="js/lessons/m2.js"></script>
+<script src="js/lessons/m3.js"></script>
+<script src="js/lessons/m4.js"></script>
+<script src="js/lessons/m5.js"></script>
+<script src="js/lessons/m6.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

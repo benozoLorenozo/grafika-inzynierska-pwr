@@ -1,0 +1,132 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; font: 13px/1.45 system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: #1a1a1a; background: #fff; }
+button { font: inherit; padding: 3px 9px; border: 1px solid #999; background: #f4f4f4; border-radius: 3px; cursor: pointer; }
+button:hover { background: #e6e6e6; }
+button.on { background: #222; color: #fff; border-color: #222; }
+#top { display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-bottom: 1px solid #ccc; }
+.brand { font-weight: 700; white-space: nowrap; }
+#mods { display: flex; gap: 4px; flex-wrap: wrap; }
+#mods button { padding: 4px 10px; }
+#lessonbar { display: flex; gap: 4px; flex-wrap: wrap; padding: 5px 10px; border-bottom: 1px solid #ddd; background: #fafafa; }
+#lessonbar button { border-color: #bbb; }
+#main { display: grid; grid-template-columns: 370px 1fr 1fr; height: calc(100vh - 78px); min-height: 520px; }
+#side { overflow-y: auto; border-right: 1px solid #ccc; padding: 8px 10px 30px; }
+.view { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #ddd; }
+.vbar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 6px; border-bottom: 1px solid #ddd; background: #fafafa; min-height: 32px; }
+.vbar button { padding: 1px 7px; font-size: 12px; }
+.vbar .hint { color: #888; font-size: 11px; margin-left: auto; }
+.vbody { position: relative; flex: 1; overflow: hidden; min-height: 200px; }
+#v3 canvas { display: block; }
+#unfoldBox { display: none; align-items: center; gap: 4px; margin-left: 6px; font-size: 12px; }
+#unfoldBox input { width: 110px; vertical-align: middle; }
+#unfoldTxt { color: #555; font-size: 11px; }
+#ctrl { display: flex; gap: 4px; }
+#ctrl button { flex: 1; padding: 6px 4px; font-weight: 600; }
+#ctrl #bPlay { flex: 0 0 38px; }
+#timeline { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0 8px; }
+#timeline span { min-width: 22px; height: 22px; padding: 0 4px; border: 1px solid #aaa; border-radius: 3px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; }
+#timeline span.done { background: #dfe8f5; }
+#timeline span.cur { background: #1d4f9c; color: #fff; border-color: #1d4f9c; }
+#stepHead { font-size: 14px; margin-bottom: 6px; }
+#stepNo { display: inline-block; background: #222; color: #fff; padding: 0 6px; margin-right: 6px; border-radius: 2px; font-size: 12px; }
+.layer { border-left: 4px solid #ccc; padding: 3px 8px; margin: 5px 0; }
+.layer h4 { margin: 0 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+.layer.co { border-color: #1d4f9c; }
+.layer.jak { border-color: #e07b00; }
+.layer.why { border-color: #0f9d58; background: #f5fbf7; }
+.layer ol, .layer ul { margin: 2px 0; padding-left: 18px; }
+details { margin-top: 10px; border-top: 1px solid #ddd; padding-top: 6px; }
+summary { font-weight: 700; cursor: pointer; }
+#algo ol { padding-left: 18px; margin: 6px 0; }
+#algo li { margin-bottom: 4px; }
+#algo .note { color: #555; font-size: 12px; }
+.prm { display: grid; grid-template-columns: 112px 1fr 44px; align-items: center; gap: 6px; margin: 3px 0; font-size: 12px; }
+.prm input[type=range] { width: 100%; }
+.prm output { text-align: right; font-variant-numeric: tabular-nums; }
+.prmsel { margin: 4px 0; font-size: 12px; }
+.prmsel select { font: inherit; }
+.spbtns { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.spnote { font-size: 12px; color: #444; margin: 4px 0; }
+#legend { margin-top: 12px; font-size: 11px; color: #555; border-top: 1px solid #ddd; padding-top: 6px; }
+#legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid #111; vertical-align: middle; margin-right: 4px; }
+#tip { position: fixed; pointer-events: none; background: #fffbe6; border: 1px solid #c9b458; padding: 4px 7px; font-size: 12px; max-width: 320px; display: none; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.lab3layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.lab3 { position: absolute; left: 0; top: 0; font: 600 12px/1 "Times New Roman", serif; font-style: italic; color: #111; background: rgba(255,255,255,.55); padding: 1px 2px; white-space: nowrap; }
+.lab3 sup, .lab3 sub { font-size: 70%; }
+.lab3.hl { color: #ff00aa; background: #fff; }
+.lab3.plane { color: #2d5d8f; font-size: 14px; background: none; }
+.lab3.axis { font-size: 11px; background: none; }
+/* ---------- arkusz SVG ---------- */
+svg.sheet { width: 100%; height: 100%; display: block; background: #fff; cursor: grab; user-select: none; }
+svg.sheet line, svg.sheet path { fill: none; stroke-linecap: round; }
+.hit { stroke: transparent !important; stroke-width: 11px; fill: none; pointer-events: stroke; }
+circle.hit { fill: transparent; stroke: none !important; pointer-events: all; }
+.s-given { stroke: #111; stroke-width: 1.9px; }
+.s-vis { stroke: #111; stroke-width: 2.4px; }
+.s-hid { stroke: #555; stroke-width: 1.3px; stroke-dasharray: 6 4; }
+.s-hidv { stroke: #555; stroke-width: 1.3px; stroke-dasharray: 6 4; }
+.s-thin { stroke: #888; stroke-width: .8px; }
+.s-odn { stroke: #9a9a9a; stroke-width: .8px; stroke-dasharray: 1 0; }
+.s-axis { stroke: #000; stroke-width: 1px; }
+.s-aux { stroke: #2a6fdb; stroke-width: 1.4px; }
+.s-auxd { stroke: #2a6fdb; stroke-width: 1.2px; stroke-dasharray: 10 3 2 3; }
+.s-aux2 { stroke: #00897b; stroke-width: 1.4px; }
+.s-res { stroke: #d01818; stroke-width: 2.6px; }
+.s-resd { stroke: #d01818; stroke-width: 1.5px; stroke-dasharray: 6 4; }
+.s-res2 { stroke: #8e24aa; stroke-width: 2.2px; }
+.s-dist { stroke: #0f9d58; stroke-width: 2.6px; opacity: .85; }
+.s-cont { stroke: #a07040; stroke-width: .9px; }
+.s-contb { stroke: #8a5a2b; stroke-width: 1.6px; }
+.s-sec { stroke: #e07b00; stroke-width: 1.8px; }
+.s-light { stroke: #d4a017; stroke-width: 1px; stroke-dasharray: 4 3; }
+.s-lightl { stroke: #c49000; stroke-width: 1.3px; }
+.s-water { stroke: #1e88e5; stroke-width: 2px; }
+.s-proj { stroke: #333; stroke-width: 1.4px; }
+.s-projl { stroke: #333; stroke-width: 1.4px; }
+.s-ray { stroke: #3b6fd6; stroke-width: .8px; stroke-dasharray: 3 3; }
+.s-eye { stroke: #2a6fdb; stroke-width: 1.4px; }
+.s-hatch, .hatch { stroke: #555; stroke-width: .7px; }
+.fillpoly { stroke-width: 1px; }
+circle.pt { fill: #111; stroke: #fff; stroke-width: 1px; }
+circle.pt.s-res { fill: #d01818; }
+circle.pt.s-aux, circle.pt.s-auxd { fill: #2a6fdb; }
+circle.pt.s-aux2 { fill: #00897b; }
+circle.pt.s-thin, circle.pt.s-odn { fill: #777; }
+circle.pt.s-dist { fill: #0f9d58; }
+circle.pt.s-sec { fill: #e07b00; }
+circle.pt.s-res2 { fill: #8e24aa; }
+circle.pt.s-water { fill: #1e88e5; }
+circle.pt.s-light, circle.pt.s-lightl { fill: #d4a017; }
+.cross { stroke-width: 1.6px; }
+.tick { stroke-width: 1.6px; }
+.txt { font: 11px system-ui, sans-serif; fill: #333; stroke: none !important; }
+.s-axisnum { font: 10px system-ui, sans-serif; fill: #444; }
+.s-hval { font: italic 11px "Times New Roman", serif; fill: #6b4423; }
+.s-note { font: 11px system-ui, sans-serif; fill: #1d4f9c; }
+.s-resT { font: 600 12px system-ui, sans-serif; fill: #d01818; }
+text.lab { font: italic 600 13px "Times New Roman", serif; fill: #111; paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
+text.lab.res { fill: #b00; }
+text.lab.small { font-size: 11px; }
+text.lab.blue { fill: #1d4f9c; }
+text.lab.brown { fill: #6b4423; font-size: 11px; }
+/* podświetlenia */
+.hl:not(.hit) { stroke: #ff00aa !important; }
+circle.pt.hl { fill: #ff00aa !important; r: 5px; }
+text.hl { fill: #ff00aa !important; }
+path.fillpoly.hl { fill: #ff00aa !important; fill-opacity: .25 !important; }
+.src:not(.hit) { animation: pulse 0.9s ease-in-out infinite; }
+circle.pt.src { animation: pulsefill 0.9s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { stroke: #ff8c00; } 50% { stroke: #ffd27a; } }
+@keyframes pulsefill { 0%,100% { fill: #ff8c00; } 50% { fill: #ffd27a; } }
+.newdraw { animation: draw .8s ease-out forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.newfade { animation: fade .8s ease-out; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.newpop { animation: pop .6s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.8); } 100% { transform: scale(1); } }
+.src.newdraw { animation: draw .8s ease-out forwards, pulse 0.9s ease-in-out infinite; }
+@media (max-width: 1100px) {
+  #main { grid-template-columns: 1fr; height: auto; }
+  #side { border-right: none; max-height: none; }
+  .view { height: 70vh; }
+}
