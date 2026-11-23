@@ -1388,6 +1388,18 @@
     const dist = Math.hypot(s - sq, r);
     return fill ? e.ha + g * s - dist / m : e.ha + g * s + dist / m;
   }
+  /* płaszczyzna skarpy przy krawędzi (bez zaokrąglania na końcach krawędzi):
+     krawędź pozioma – warstwice ∥ krawędzi; pochyła – płaszczyzna styczna do stożków */
+  const edgeSteep = (e, m) => Math.abs(((e.hb - e.ha) / e.L) * m) >= 0.999;
+  function edgeGrad(e, m, fill) {
+    const g = (e.hb - e.ha) / e.L;
+    const c = Math.sqrt(Math.max(0, 1 - g * g * m * m));
+    return V.add(V.mul(e.d, g), V.mul(e.nout, ((fill ? -1 : 1) * c) / m));
+  }
+  function edgePlane(e, q, m, fill) {
+    if (edgeSteep(e, m)) return edgeEnv(e, q, m, fill);
+    return e.ha + V.dot(V.sub(q, e.a), edgeGrad(e, m, fill));
+  }
 
   GW.EW = EW;
   GW.addLesson({
@@ -1461,8 +1473,43 @@
       const slopeE = edges.filter((e) => !e.open);
       const inside = (P) => G.pointInPoly2(P, poly);
       const hD = (x, y) => cfg.hD(x, y) + dH;
-      const Sn = (x, y) => Math.max(...slopeE.map((e) => edgeEnv(e, [x, y], mn, true)));
-      const Sw = (x, y) => Math.min(...slopeE.map((e) => edgeEnv(e, [x, y], mw, false)));
+      /* krawędź skarp w wierzchołku i: rzut prostej przecięcia płaszczyzn skarp
+         sąsiednich krawędzi (przechodzi przez wierzchołek, idzie na zewnątrz obiektu) */
+      const cornerRay = (i, m, fill) => {
+        const e1 = edges[(i - 1 + ne) % ne],
+          e2 = edges[i];
+        if (e1.open || e2.open || edgeSteep(e1, m) || edgeSteep(e2, m)) return null;
+        const g1 = edgeGrad(e1, m, fill),
+          dg = V.sub(g1, edgeGrad(e2, m, fill));
+        if (V.len(dg) < 1e-9) return null;
+        let w = V.norm(V.perp2(dg));
+        if (V.dot(w, V.add(e1.nout, e2.nout)) < 0) w = V.mul(w, -1);
+        return { v: e2.a, w, s: V.dot(g1, w) };
+      };
+      const rays = { n: out.map((q, i) => cornerRay(i, mn, true)), w: out.map((q, i) => cornerRay(i, mw, false)) };
+      // obszar skarpy krawędzi: na zewnątrz krawędzi, między krawędziami skarp w jej końcach
+      const sideOK = (r, P, ref) => {
+        if (!r) return true;
+        const c = V.cross2(r.w, ref);
+        return Math.abs(c) < 1e-12 || V.cross2(r.w, V.sub(P, r.v)) * Math.sign(c) > -1e-7;
+      };
+      const inWedge = (e, P, mode) => V.dot(V.sub(P, e.a), e.nout) > -1e-7 && sideOK(rays[mode][e.i], P, e.d) && sideOK(rays[mode][(e.i + 1) % ne], P, V.mul(e.d, -1));
+      const Sn = (x, y) => {
+        const P = [x, y];
+        let best = -Infinity;
+        slopeE.forEach((e) => {
+          if (inWedge(e, P, 'n')) best = Math.max(best, edgePlane(e, P, mn, true));
+        });
+        return best > -Infinity ? best : Math.max(...slopeE.map((e) => edgeEnv(e, P, mn, true)));
+      };
+      const Sw = (x, y) => {
+        const P = [x, y];
+        let best = Infinity;
+        slopeE.forEach((e) => {
+          if (inWedge(e, P, 'w')) best = Math.min(best, edgePlane(e, P, mw, false));
+        });
+        return best < Infinity ? best : Math.min(...slopeE.map((e) => edgeEnv(e, P, mw, false)));
+      };
       const inBox = (x, y) => x >= box[0] && x <= box[2] && y >= box[1] && y <= box[3];
       const F = (x, y) => {
         if (!inBox(x, y)) return NaN;
@@ -1606,12 +1653,6 @@
       const gSn = G.grid(SnMask, box[0], box[2], box[1], box[3], NX, NY);
       const gSw = G.grid(SwMask, box[0], box[2], box[1], box[3], NX, NY);
       const hasSloped = slopeE.some((e) => Math.abs(e.hb - e.ha) > 1e-6);
-      B.step({
-        title: 'Warstwice skarp nasypu i wykopu',
-        co: 'Od krawędzi obiektu rysujemy warstwice skarp: nasyp co <b>' + f1(mn) + '</b>, wykop co <b>' + f1(mw) + '</b> na każdy 1 m.' + (hasSloped ? ' Przy krawędziach pochyłych (droga) – <b>metodą stożków</b> (niebieskie okręgi).' : ''),
-        jak: 'Krawędź pozioma o cesze H: warstwica skarpy o cesze k jest ∥ krawędzi w odległości |H − k|·m. ' + (hasSloped ? 'Krawędź pochyła: w punkcie krawędzi o cesze c zakreślamy okrąg o promieniu |c − k|·m; warstwica k skarpy to styczna do takich okręgów (obwiednia stożków).' : '') + ' Na narożach warstwice sąsiednich skarp spotykają się na krawędzi skarp.',
-        why: 'Skarpa ma stałe nachylenie 1 : m – odległość pozioma na 1 m różnicy wysokości to moduł. Przy krawędzi pochyłej powierzchnia o stałym nachyleniu to obwiednia stożków o wierzchołkach na krawędzi.',
-      });
       const slopeLines = (g, levels, pre, st) =>
         levels.forEach((k) => {
           G.isoline(g, k).forEach((ln) => {
@@ -1622,10 +1663,14 @@
         });
       const lvN = rangeInt(tmin, hmax).filter((k) => k < hmax - 1e-6);
       const lvW = rangeInt(hmin, tmax).filter((k) => k > hmin + 1e-6);
-      slopeLines(gSn, lvN, 'sn', 'aux');
-      slopeLines(gSw, lvW, 'sw', 'aux2');
       // stożki na krawędziach pochyłych
-      if (hasSloped)
+      if (hasSloped) {
+        B.step({
+          title: 'Krawędzie pochyłe: stożki skarp',
+          co: 'Na krawędziach pochyłych (droga) zaznaczamy punkty o cechach całkowitych i z każdego zakreślamy okręgi o promieniach 1·m, 2·m, … – podstawy stożków o nachyleniu skarpy.',
+          jak: 'Punkt krawędzi o cesze c: okrąg o promieniu |c − k|·m to poziom k stożka. Nasyp – m<sub>n</sub> (w dół), wykop – m<sub>w</sub> (w górę).',
+          why: 'Płaszczyzna skarpy przy krawędzi pochyłej jest styczna do wszystkich takich stożków – jej warstwice to wspólne styczne okręgów o tej samej cesze.',
+        });
         slopeE.forEach((e) => {
           if (Math.abs(e.hb - e.ha) < 1e-6) return;
           rangeInt(Math.min(e.ha, e.hb), Math.max(e.ha, e.hb)).forEach((c) => {
@@ -1642,6 +1687,100 @@
             B.a2({ t: 'pt', id: 'conep' + e.i + '_' + c, p: Pc, s: 'aux', r: 1.8, label: '(' + c + ')', labCls: 'small' });
           });
         });
+      }
+      // naroża: prosta krawędź skarp od wierzchołka do terenu + punkty równocechowych warstwic
+      const corners = [];
+      out.forEach((q, i) => {
+        const v = P2(q);
+        const fill = T(v[0], v[1]) < q[2];
+        const r = rays[fill ? 'n' : 'w'][i];
+        if (!r || (fill ? r.s >= 0 : r.s <= 0)) return;
+        const S = fill ? Sn : Sw;
+        const zoneOK = (P) => zoneN(P[0], P[1]) === fill;
+        const at = (t) => V.add(v, V.mul(r.w, t));
+        const dt = Math.min(mn, mw) / 25;
+        const pts = [v];
+        let prev = v,
+          dPrev = fill ? q[2] - T(v[0], v[1]) : T(v[0], v[1]) - q[2];
+        for (let t = dt; t < 4000 * dt; t += dt) {
+          const P = at(t);
+          const hs = q[2] + t * r.s;
+          if (!inBox(P[0], P[1]) || inside(P) || Math.abs(S(P[0], P[1]) - hs) > 1e-4 * (1 + Math.abs(hs))) break;
+          const d = fill ? hs - T(P[0], P[1]) : T(P[0], P[1]) - hs;
+          if (d <= 0) {
+            pts.push(V.lerp(prev, P, dPrev / (dPrev - d + 1e-12)));
+            break;
+          }
+          pts.push(P);
+          prev = P;
+          dPrev = d;
+        }
+        const kp = [];
+        (fill ? lvN : lvW).forEach((k) => {
+          const t = (k - q[2]) / r.s;
+          if (t <= 1e-6) return;
+          const P = at(t);
+          if (!inBox(P[0], P[1]) || inside(P) || !zoneOK(P) || Math.abs(S(P[0], P[1]) - k) > 1e-4 * (1 + Math.abs(k))) return;
+          kp.push({ k, p: P });
+        });
+        if (pts.length > 2 || kp.length) corners.push({ i, fill, pts, kp });
+      });
+      // warstwice skarp – krok po kroku (od obiektu na zewnątrz)
+      const chunk = (arr) => {
+        const n = Math.max(1, Math.ceil(arr.length / 6));
+        const r = [];
+        for (let i = 0; i < arr.length; i += n) r.push(arr.slice(i, i + n));
+        return r;
+      };
+      const ordN = lvN.slice().sort((a, b) => b - a),
+        ordW = lvW.slice().sort((a, b) => a - b);
+      let firstLv = true;
+      const levelSteps = (ord, fill) =>
+        chunk(ord).forEach((ks) => {
+          const m = fill ? mn : mw;
+          const what = fill ? 'nasypu' : 'wykopu';
+          const kTxt = ks.length > 1 ? ks[0] + ' … ' + ks[ks.length - 1] : String(ks[0]);
+          const kps = [];
+          corners.filter((c) => c.fill === fill).forEach((c) => c.kp.forEach((q) => ks.indexOf(q.k) >= 0 && kps.push(Object.assign({ i: c.i }, q))));
+          B.step({
+            title: 'Skarpa ' + what + ': warstwic' + (ks.length > 1 ? 'e ' : 'a ') + kTxt,
+            co:
+              'Warstwic' + (ks.length > 1 ? 'e skarp o cechach <b>' + kTxt + '</b>' : 'a skarp o cesze <b>' + kTxt + '</b>') + ' (' + what + ', moduł ' + f1(m) + ' ' + cfg.unit + ' na 1 m). ' +
+              (kps.length ? 'Warstwice sąsiednich skarp o tej samej cesze przecinają się – zaznaczamy te punkty (' + kps.length + ' pkt) – leżą na krawędzi skarp.' : 'Na narożach w tym obszarze nie ma przecięć warstwic sąsiednich skarp.'),
+            jak:
+              'Krawędź pozioma o cesze H: warstwica k skarpy jest ∥ krawędzi w odległości |H − k|·m.' +
+              (hasSloped ? ' Krawędź pochyła: warstwica k to wspólna styczna okręgów stożków o tej samej cesze.' : '') +
+              ' Warstwice prowadzimy prosto aż do przecięcia z warstwicą sąsiedniej skarpy o tej samej cesze – narożników <b>nie zaokrąglamy</b>.',
+            why: firstLv
+              ? 'Skarpa ma stałe nachylenie 1 : m – odległość pozioma na 1 m różnicy wysokości to moduł. Skarpy sąsiednich krawędzi to dwie płaszczyzny – przecinają się wzdłuż prostej (krawędzi skarp).'
+              : 'Kolejna warstwica jest o m dalej od obiektu. Punkty przecięć z sąsiednią skarpą układają się na jednej prostej przechodzącej przez narożnik obiektu.',
+          });
+          firstLv = false;
+          slopeLines(fill ? gSn : gSw, ks, fill ? 'sn' : 'sw', fill ? 'aux' : 'aux2');
+          kps.forEach((q, j) => {
+            const id = 'kp' + q.i + '_' + q.k;
+            B.a2({ t: 'pt', id, p: q.p, s: fill ? 'aux' : 'aux2', r: 2.4, label: String(q.k), labCls: 'small' });
+            B.a3({ t: 'pt', id, p: [q.p[0], q.p[1], q.k], s: fill ? 'aux' : 'aux2', small: true });
+            B.info(id, 'Przecięcie warstwic o cesze ' + q.k + ' dwóch sąsiednich skarp ' + what + ' – punkt krawędzi skarp', [(fill ? 'sn' : 'sw') + q.k]);
+            void j;
+          });
+        });
+      levelSteps(ordN, true);
+      levelSteps(ordW, false);
+      if (corners.length) {
+        B.step({
+          title: 'Krawędzie skarp na narożach',
+          co: 'Przez narożnik obiektu i zaznaczone punkty przecięć równocechowych warstwic prowadzimy <b>krawędź skarp</b> – prostą, aż do terenu.',
+          jak: 'Przy krawędziach poziomych i równych modułach krawędź skarp to dwusieczna kąta naroża; przy różnych cechach / drodze – po prostu prosta przez wyznaczone punkty.',
+          why: 'Dwie sąsiednie skarpy to płaszczyzny – ich przecięcie jest prostą. Na narożu wypukłym to grzbiet (nasyp) lub krawędź wklęsła (wykop), na wklęsłym – kosz.',
+        });
+        corners.forEach((c) => {
+          if (c.pts.length < 2) return;
+          B.a2({ t: 'pl', id: 'cor' + c.i, pts: c.pts, s: c.fill ? 'aux' : 'aux2', w: 1.6 });
+          B.a3({ t: 'pl', id: 'cor' + c.i, pts: c.pts.map((P) => [P[0], P[1], F(P[0], P[1]) + 0.05]), s: c.fill ? 'aux' : 'aux2' });
+          B.info('cor' + c.i, 'Krawędź skarp ' + (c.fill ? 'nasypu' : 'wykopu') + ' na narożu obiektu – przez punkty przecięć warstwic o tych samych cechach', c.kp.map((q) => 'kp' + c.i + '_' + q.k));
+        });
+      }
       // punkty granicy
       const gW = G.grid(fW, box[0], box[2], box[1], box[3], NX, NY);
       const bN = G.isoline(gN, 0).map((ln) => ln.filter((q) => !inside(q))).filter((l) => l.length > 1);
@@ -1663,7 +1802,7 @@
         cW = crossPts(bW, lvW);
       B.step({
         title: 'Punkty granicy: warstwica skarpy ∩ warstwica terenu o tej samej cesze',
-        co: 'Punkty, w których warstwica skarpy przecina warstwicę terenu <b>o tej samej cesze</b>: ' + cN.length + ' dla nasypu, ' + cW.length + ' dla wykopu.',
+        co: 'Punkty, w których warstwica skarpy przecina warstwicę terenu <b>o tej samej cesze</b>: ' + cN.length + ' dla nasypu, ' + cW.length + ' dla wykopu.' + (corners.some((c) => c.pts.length > 1) ? ' Krawędzie skarp też kończą się na terenie.' : ''),
         jak: 'Dla każdej cechy k: warstwica skarpy k ∩ warstwica terenu k. Najedź na punkt – podświetlą się obie warstwice.',
         why: 'W takim punkcie skarpa i teren mają tę samą wysokość – skarpa „wychodzi” na teren.',
       });
@@ -1675,10 +1814,10 @@
         B.info(id, 'Punkt granicy robót o cesze ' + q.k, [(isN ? 'sn' : 'sw') + q.k, 'tw' + q.k]);
       });
       B.step({
-        title: 'Granice robót i krawędzie skarp na narożach',
-        co: 'Łączymy punkty: <b>granica nasypu</b> (stopa skarpy, czerwona) i <b>granica wykopu</b> (korona skarpy, fioletowa). Z naroży obiektu prowadzimy krawędzie skarp.',
-        jak: 'Krawędź dwóch skarp przechodzi przez narożnik obiektu i przez punkty przecięcia równocechowych warstwic obu skarp (przy równych modułach i krawędziach poziomych – dwusieczna).',
-        why: 'Granica robót = krzywa przecięcia skarp z terenem. Krawędź skarp = przecięcie dwóch powierzchni skarp.',
+        title: 'Granice robót',
+        co: 'Łączymy punkty: <b>granica nasypu</b> (stopa skarpy, czerwona) i <b>granica wykopu</b> (korona skarpy, fioletowa). Na krawędziach skarp granica się załamuje.',
+        jak: 'Między punktami granicy prowadzimy linię płynnie (teren jest krzywy), ale z załamaniem w miejscu, gdzie krawędź skarp dochodzi do terenu.',
+        why: 'Granica robót = krzywa przecięcia skarp z terenem.',
       });
       bN.forEach((ln) => {
         B.a2({ t: 'pl', id: 'bN', pts: ln, s: 'res', w: 2.4 });
@@ -1690,64 +1829,6 @@
       });
       B.info('bN', 'Granica nasypu (stopa skarpy nasypu)');
       B.info('bW', 'Granica wykopu (korona skarpy wykopu)');
-      // naroża: śledzenie krzywej f1 = f2 od wierzchołka
-      out.forEach((q, i) => {
-        const e1 = edges[(i - 1 + ne) % ne],
-          e2 = edges[i];
-        if (e1.open || e2.open) return;
-        const v = P2(q);
-        const T0 = T(v[0], v[1]);
-        const fill = T0 < q[2];
-        const m = fill ? mn : mw;
-        const f = (P, e) => edgeEnv(e, P, m, fill);
-        let dir = V.norm(V.add(e1.nout, e2.nout));
-        const crossz = V.cross2(e1.d, e2.d);
-        const reflex = area > 0 ? crossz < 0 : crossz > 0;
-        void reflex;
-        const pts = [v];
-        let cur = v;
-        for (let s = 0.25; s < 200; s += 0.25) {
-          const base = Math.atan2(dir[1], dir[0]);
-          let lo = base - 0.9,
-            hi = base + 0.9;
-          const g = (a) => {
-            const P = V.add(cur, [0.25 * Math.cos(a), 0.25 * Math.sin(a)]);
-            return f(P, e1) - f(P, e2);
-          };
-          let glo = g(lo),
-            ghi = g(hi);
-          if (glo * ghi > 0) break;
-          for (let it = 0; it < 30; it++) {
-            const mid = (lo + hi) / 2,
-              gm = g(mid);
-            if (gm * glo <= 0) {
-              hi = mid;
-              ghi = gm;
-            } else {
-              lo = mid;
-              glo = gm;
-            }
-          }
-          const a = (lo + hi) / 2;
-          const P = V.add(cur, [0.25 * Math.cos(a), 0.25 * Math.sin(a)]);
-          if (!inBox(P[0], P[1]) || inside(P)) break;
-          const hs = f(P, e1);
-          const ht = T(P[0], P[1]);
-          if ((fill && hs <= ht) || (!fill && hs >= ht)) {
-            pts.push(P);
-            break;
-          }
-          if (Math.max(...slopeE.map((e) => (e === e1 || e === e2 ? -1e9 : fill ? edgeEnv(e, P, m, true) : -edgeEnv(e, P, m, false)))) > (fill ? hs : -hs) + 1e-6) break;
-          pts.push(P);
-          dir = V.norm(V.sub(P, cur));
-          cur = P;
-        }
-        if (pts.length > 2) {
-          B.a2({ t: 'pl', id: 'cor' + i, pts, s: fill ? 'aux' : 'aux2', w: 1.6 });
-          B.a3({ t: 'pl', id: 'cor' + i, pts: pts.map((P) => [P[0], P[1], F(P[0], P[1]) + 0.05]), s: fill ? 'aux' : 'aux2' });
-          B.info('cor' + i, 'Krawędź skarp ' + (fill ? 'nasypu' : 'wykopu') + ' na narożu obiektu');
-        }
-      });
       // wynik
       B.step({
         title: 'Wynik: plan robót ziemnych i model 3D',
@@ -1758,7 +1839,7 @@
       });
       B.data.finalStep = B.cur;
       B.end('terrain0');
-      B.endWhere((q) => /^s[nw]\d/.test(q.id) || /^cp\d/.test(q.id) || /^cone/.test(q.id));
+      B.endWhere((q) => /^s[nw]\d/.test(q.id) || /^cp\d/.test(q.id) || /^kp\d/.test(q.id) || /^cone/.test(q.id));
       const fc = (x, y, z) => {
         if (inside([x, y])) return '#9e9e9e';
         const t = T(x, y);
