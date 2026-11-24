@@ -34,7 +34,7 @@ Zadania odtworzone z list ćwiczeniowych są oznaczone 📋. Uzupełniają je pr
 - **Rysunek techniczny** – widok 2D zgodny z normami (rodzaje i grubości linii, pismo, ramka, tabliczka rysunkowa) oraz automatyczne **wymiarowanie**.
 - **Generator zadań** – dla każdej lekcji: poziom trudności, typ zadania i opcje; wszystkie dane (punkty, bryły, teren, platformy, drogi) losowane z zachowaniem poprawności.
 - **Tryb „Co jeśli?”** – zmiana danych przelicza całą konstrukcję. Można też wylosować nowy, poprawny wariant zadania.
-- **Tryb „Rozwiąż sam”** – wskazujesz na rysunku położenie kolejnych punktów, aplikacja ocenia odchyłkę.
+- **Tryb „Rozwiąż sam”** – każdy krok to zadanie: pytanie „co robimy teraz?” (kolejność konstrukcji), wskazanie punktów kroku w dowolnej kolejności, przebieg linii (2 punkty na linii) i widoczność krawędzi (zaznacz niewidoczne). Podpowiedzi stopniowane (opis „Jak?”, linie pomocnicze, obszar, pokaż punkt), regulowana dokładność, postęp kroków na osi czasu i podsumowanie z powtórką na nowych danych.
 - **Tryb „Kartka”** – czarno-biały rysunek z grubościami linii jak na kolokwium; **⚙ Wygląd** – motyw (jasny, ciemny, wysoki kontrast, sepia), kolory, wielkość tekstu i linii.
 - **Ściągawka teorii** i lista **typowych błędów** dla każdego modułu.
 

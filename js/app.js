@@ -36,7 +36,7 @@
     playing: null,
     modSel: 1,
     filt: Object.assign({}, store.get('filters', {})),
-    quiz: { on: false, revealed: new Set(), targets: [], i: 0, miss: 0, ok: 0, bad: 0, skip: 0 },
+    quiz: null,
     measure: { on: false, a: null, b: null },
     zsMode: 'auto',
     zs: 1,
@@ -72,6 +72,7 @@
   const v2 = new GW.View2D($('#v2'));
   App.v3 = v3;
   App.v2 = v2;
+  App.quiz = GW.makeQuiz(App, { $, store, v2, show: (k, o) => show(k, o) });
 
   function infoOf(id) {
     if (!id) return '';
@@ -146,14 +147,14 @@
     if (App.lesson.special && App.lesson.special.click) App.lesson.special.click(ctx(), p.id);
   };
   v2.onClick = (id) => {
-    if (App.quiz.on && quizActive()) return;
+    if (App.quiz.active()) return;
     if (App.measure.on) return;
     const pid = planeOfId(id);
     if (pid && App.B.sys) observer(pid);
     if (App.lesson.special && App.lesson.special.click) App.lesson.special.click(ctx(), id);
   };
   v2.onSheetClick = (P) => {
-    if (App.quiz.on && quizActive()) return quizClick(P);
+    if (App.quiz.click(P)) return;
     if (App.measure.on) return measureClick(P);
   };
 
@@ -249,7 +250,7 @@
     buildGen();
     v3.frameHooks = [];
     v2.onBgMove = null;
-    App.quiz.revealed = new Set();
+    App.quiz.reset();
     App.measure.a = App.measure.b = null;
     if (L.special && L.special.frame) v3.frameHooks.push((now) => L.special.frame(ctx(), now));
     App.zsMode = 'auto';
@@ -323,7 +324,7 @@
         if (p.rebuildParams) {
           buildParams();
         }
-        App.quiz.revealed = new Set();
+        App.quiz.reset();
         rebuild({ first: !!p.rebuildFrame });
         if (p.rebuildFrame) show(0, { anim: true, cam: true, firstCam: true });
         else show(Math.min(App.k, App.B.steps.length - 1), { anim: false, cam: false });
@@ -423,7 +424,7 @@
     }
     if (!ok) Object.assign(App.P, keep);
     syncParamUI();
-    App.quiz.revealed = new Set();
+    App.quiz.reset();
     rebuild({ first: true });
     show(0, { anim: true, cam: true, firstCam: true });
   }
@@ -723,6 +724,7 @@
     }
     B.finish();
     App.B = B;
+    App.quiz.reset();
     v3.setSys(B.sys);
     $('#unfoldBox').style.display = B.sys ? 'inline-flex' : 'none';
     if (L.zExag) applyZs(true);
@@ -775,105 +777,16 @@
   }
   App.applyCam = applyCam;
 
-  /* ---------- tryb „Rozwiąż sam” ---------- */
-  function quizActive() {
-    return App.quiz.on && App.quiz.targets.length && App.quiz.i < App.quiz.targets.length && !App.quiz.revealed.has(App.k);
-  }
-  function quizTargets(k) {
-    const seen = new Set();
-    return App.B.p2.filter((p) => {
-      if (p.from !== k || p.t !== 'pt' || !p.label || p.noPick) return false;
-      const key = p.id + '@' + p.p.map((v) => v.toFixed(2)).join(',');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-  function quizTol() {
-    const b = App.fitBox || [0, 0, 100, 100];
-    return Math.max(2.2, 0.018 * Math.hypot(b[2] - b[0], b[3] - b[1]));
-  }
-  function quizUI() {
-    const q = App.quiz;
-    const box = $('#quizBox');
-    box.style.display = q.on ? 'block' : 'none';
-    $('#bQuiz').classList.toggle('on', q.on);
-    if (!q.on) return;
-    const k = App.k;
-    let html = '<div class="qscore">Trafione: <b>' + q.ok + '</b> · pudła: <b>' + q.bad + '</b> · pominięte: <b>' + q.skip + '</b></div>';
-    if (q.revealed.has(k) || !q.targets.length) {
-      html += '<div class="qmsg ok">' + (q.targets.length ? '✔ Krok rozwiązany – przejdź dalej (→).' : 'W tym kroku nie ma punktów do wskazania – przeczytaj opis i przejdź dalej (→).') + '</div>';
-    } else {
-      const t = q.targets[q.i];
-      html += '<div class="qmsg">Kliknij na rysunku 2D, gdzie leży punkt <b class="qlab">' + GW.labHTML(t.label) + '</b> (' + (q.i + 1) + ' z ' + q.targets.length + ').</div>';
-      if (q.last) html += '<div class="qmsg ' + (q.last.ok ? 'ok' : 'bad') + '">' + q.last.txt + '</div>';
-      html += '<div class="spbtns"><button id="qHint">Podpowiedź (JAK)</button><button id="qShow">Pokaż ten punkt</button><button id="qReveal">Pokaż cały krok</button></div>';
-    }
-    box.innerHTML = html;
-    const hb = $('#qHint');
-    if (hb)
-      hb.onclick = () => {
-        $('#stepBox').classList.remove('quizhide');
-      };
-    const sb = $('#qShow');
-    if (sb)
-      sb.onclick = () => {
-        q.skip++;
-        q.last = { ok: false, txt: 'Pokazano ' + GW.labHTML(q.targets[q.i].label) + '.' };
-        q.shown.push(q.targets[q.i]);
-        q.i++;
-        quizAdvance();
-      };
-    const rb = $('#qReveal');
-    if (rb)
-      rb.onclick = () => {
-        q.skip += q.targets.length - q.i;
-        q.i = q.targets.length;
-        quizAdvance();
-      };
-  }
-  function quizAdvance() {
-    const q = App.quiz;
-    if (q.i >= q.targets.length) {
-      q.revealed.add(App.k);
-      q.last = null;
-      show(App.k, { anim: true, cam: false, keepUnfold: true });
-    } else {
-      q.miss = 0;
-      show(App.k, { anim: false, cam: false, keepUnfold: true, keepQuiz: true });
-    }
-  }
-  function quizClick(P) {
-    const q = App.quiz;
-    const t = q.targets[q.i];
-    const d = V.dist(P, t.p);
-    const tol = quizTol();
-    if (d <= tol) {
-      q.ok++;
-      q.last = { ok: true, txt: '✔ Dobrze! ' + GW.labHTML(t.label) + ' (odchyłka ' + GW.G.f1(d) + ' mm).' };
-      q.shown.push(t);
-      q.i++;
-      quizAdvance();
-    } else {
-      q.bad++;
-      q.miss++;
-      q.last = { ok: false, txt: '✘ Pudło – ' + GW.G.f1(d) + ' mm od właściwego miejsca' + (q.miss >= 2 ? '. Wskazówka: przeczytaj „JAK to wyznaczamy?” i sprawdź linie odnoszące.' : '. Spróbuj jeszcze raz.') };
-      if (q.miss >= 2) $('#stepBox').classList.remove('quizhide');
-      q.flash = { p: P, ok: false };
-      quizUI();
-      v2.setFlash(P);
-    }
-  }
+  /* ---------- tryb „Rozwiąż sam” (logika w quiz.js) ---------- */
   function toggleQuiz(on) {
-    const q = App.quiz;
-    q.on = on === undefined ? !q.on : on;
-    q.revealed = new Set();
-    q.ok = q.bad = q.skip = 0;
-    if (q.on) {
+    App.quiz.toggle(on);
+    if (App.quiz.on && App.measure.on) {
       App.measure.on = false;
+      App.measure.a = App.measure.b = null;
       $('#bMeasure').classList.remove('on');
+      v2.svg.style.cursor = '';
+      refreshOverlay();
     }
-    show(App.k, { anim: false, cam: false, keepUnfold: true });
   }
   $('#bQuiz').onclick = () => toggleQuiz();
 
@@ -920,7 +833,7 @@
     m.on = !m.on;
     m.a = m.b = null;
     $('#bMeasure').classList.toggle('on', m.on);
-    if (m.on && App.quiz.on) toggleQuiz(false);
+    if (m.on && App.quiz.on) App.quiz.toggle(false);
     v2.svg.style.cursor = m.on ? 'crosshair' : '';
     refreshOverlay();
   };
@@ -932,19 +845,9 @@
     const changed = k !== App.k;
     App.k = k;
     const st = B.steps[k];
-    const q = App.quiz;
-    if (q.on && (!o.keepQuiz || changed)) {
-      if (changed || !o.keepQuiz) {
-        q.targets = k > 0 && !q.revealed.has(k) ? quizTargets(k) : [];
-        q.i = 0;
-        q.miss = 0;
-        q.shown = [];
-        if (!o.keepQuiz) q.last = null;
-        if (!q.targets.length) q.revealed.add(k);
-      }
-    }
-    const hideNew = q.on && !q.revealed.has(k) && q.targets.length;
-    App.subs = App.ui.subs && !q.on ? GW.subSteps(B, k) : null;
+    const QZ = App.quiz;
+    QZ.enter(k);
+    App.subs = App.ui.subs && !QZ.on ? GW.subSteps(B, k) : null;
     if (App.subs) App.sub = o.subEnd ? App.subs.length - 1 : Math.max(0, Math.min(App.subs.length - 1, o.sub != null ? o.sub : changed ? 0 : App.sub));
     else App.sub = 0;
     const lim = App.subs ? App.subs[App.sub].maxSeq : Infinity;
@@ -953,14 +856,21 @@
     const F = (p) => GW.passFilter(p, App.filt) && !(App.eng && ENG_HIDE[GW.catOf(p)]);
     const vis = (p) => p.from <= k && (p.to === undefined || p.to > k) && F(p) && !(p.from === k && p.seq != null && p.seq > lim);
     const isNew = (p) => p.from === k && (p.seq == null || p.seq > minNew);
-    let p2 = B.p2.filter(vis),
+    // w trybie „Rozwiąż sam” nierozwiązany krok rysuje quiz (ukryte nowe elementy, zadania)
+    const qv = QZ.view(k, F);
+    let p2, p3, isNew2 = isNew, isNew3 = isNew;
+    if (qv) {
+      p2 = qv.p2;
+      p3 = qv.p3;
+      const fid = new Set([...qv.fresh].map((p) => p.id));
+      isNew2 = (p) => qv.fresh.has(p);
+      isNew3 = (p) => fid.has(p.id);
+    } else {
+      p2 = B.p2.filter(vis);
       p3 = B.p3.filter(vis);
-    if (hideNew) {
-      p2 = p2.filter((p) => p.from !== k || (q.shown || []).indexOf(p) >= 0);
-      p3 = p3.filter((p) => p.from !== k);
     }
-    v3.setPrims(p3, { animate: o.anim, step: k, isNew });
-    v2.setPrims(p2, { animate: o.anim && !hideNew, step: k, isNew });
+    v3.setPrims(p3, { animate: o.anim, step: k, isNew: isNew3 });
+    v2.setPrims(p2, { animate: o.anim, step: k, isNew: isNew2 });
     const src = new Set(st.src || []);
     v3.setSrc(src);
     v2.setSrc(src);
@@ -970,10 +880,16 @@
     $('#sCo').innerHTML = st.co || '';
     $('#sJak').innerHTML = st.jak || '';
     $('#sWhy').innerHTML = st.why || '';
-    $('#stepBox').classList.toggle('quizhide', !!hideNew);
+    $('#stepBox').classList.toggle('quizhide', !!qv && !qv.jak);
+    $('#stepBox').classList.toggle('quizorder', !!qv && qv.mode === 'order');
     document.querySelectorAll('#timeline button').forEach((e, i) => {
       e.classList.toggle('cur', i === k);
       e.classList.toggle('done', i < k);
+      const g = QZ.on ? QZ.grade(i) : null;
+      ['perfect', 'ok', 'shown'].forEach((c) => e.classList.toggle('q' + c, g === c));
+      const t = (B.steps[i].title || '').replace(/<[^>]+>/g, '');
+      e.title = QZ.isDone(i) ? t : 'Krok ' + (i + 1);
+      e.setAttribute('aria-label', 'Krok ' + (i + 1) + (QZ.isDone(i) ? ': ' + t : ''));
       if (i === k) e.setAttribute('aria-current', 'step');
       else e.removeAttribute('aria-current');
     });
@@ -991,7 +907,7 @@
     if (App.lesson.special && App.lesson.special.onStep && changed) App.lesson.special.onStep(ctx(), k);
     else if (App.lesson.special && App.lesson.special.onStep && o.cam) App.lesson.special.onStep(ctx(), k);
     refreshOverlay();
-    quizUI();
+    QZ.ui();
   }
   App.show = show;
   App.rebuild = rebuild;
@@ -1017,12 +933,7 @@
     show(App.k - 1, { anim: false, cam: true, subEnd: true });
   };
   $('#bNext').onclick = () => {
-    const q = App.quiz;
-    if (q.on && !q.revealed.has(App.k) && q.targets.length) {
-      q.skip += q.targets.length - q.i;
-      q.i = q.targets.length;
-      return quizAdvance();
-    }
+    if (App.quiz.next()) return;
     if (App.subs && App.sub < App.subs.length - 1) return show(App.k, { sub: App.sub + 1, anim: true, keepUnfold: true });
     show(App.k + 1, { anim: true, cam: true, sub: 0 });
   };
@@ -1084,6 +995,7 @@
         ['F', 'pokaż / ukryj panel filtrów widoku'],
         ['P', 'rzutnia boczna π₃ (lekcje Monge’a)'],
         ['R', 'tryb „Rozwiąż sam”'],
+        ['H', '„Rozwiąż sam”: kolejna podpowiedź'],
         ['L', 'losuj wariant zadania'],
         ['K', 'tryb kartki (czarno-biały rysunek)'],
         ['M', 'miarka (dwa kliknięcia)'],
@@ -1202,6 +1114,7 @@
       const c = $('#cbP3');
       if (c && !c.disabled) setP3(!GW.view.p3);
     } else if (k === 'r' || k === 'R') toggleQuiz();
+    else if ((k === 'h' || k === 'H') && App.quiz.on) App.quiz.hint();
     else if (k === 'l' || k === 'L') {
       if ((App.lesson.params || []).length) randomVariant();
     } else if (k === 'k' || k === 'K') $('#bPaper').click();
@@ -1316,7 +1229,7 @@
     delete document.body.dataset.err;
     Object.assign(App.P, found);
     c.msg = '✔ ' + (found._desc || 'Wygenerowano nowe zadanie.') + ' Przejdź kroki od początku (→) albo włącz „Rozwiąż sam”.';
-    App.quiz.revealed = new Set();
+    App.quiz.reset();
     buildParams();
     buildGen();
     rebuild({ first: true });

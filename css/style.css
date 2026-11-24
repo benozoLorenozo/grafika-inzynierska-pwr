@@ -189,6 +189,45 @@ circle.pt.src { animation: pulsefill 0.9s ease-in-out infinite; }
 .qmsg.bad { color: #b00020; font-weight: 600; }
 .qlab { font: italic 700 16px "Times New Roman", serif; color: var(--acc); }
 #stepBox.quizhide .layer.jak, #stepBox.quizhide .layer.why, #stepBox.quizhide #subBox { display: none; }
+#stepBox.quizorder .layer, #stepBox.quizorder #subBox { display: none; }
+#stepBox.quizorder #stepTitle { visibility: hidden; }
+.qhead { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px; }
+.qbtns button { padding: 1px 6px; min-width: 0; font-size: 13px; }
+.qtask { margin: 6px 0 4px; }
+.qmuted { font-size: 11px; color: var(--muted); margin: 3px 0; }
+.qopts { display: flex; flex-direction: column; gap: 4px; margin: 4px 0; }
+.qopt { text-align: left; white-space: normal; padding: 5px 8px; }
+.qopt.good, .qopt.good:disabled { background: color-mix(in srgb, #0b7a3e 18%, var(--bg)); border-color: #0b7a3e; color: var(--fg); opacity: 1; }
+.qopt.badc, .qopt.badc:disabled { background: color-mix(in srgb, #b00020 15%, var(--bg)); border-color: #b00020; color: var(--fg); opacity: 1; }
+.qchips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.qchip { padding: 2px 8px; min-width: 0; font: italic 600 14px "Times New Roman", serif; border-radius: 12px; }
+.qchip.aim { outline: 2px solid var(--acc); background: color-mix(in srgb, var(--acc) 15%, var(--bg)); }
+.qchip.ok1:disabled, .qchip.ok:disabled { color: #0b7a3e; border-color: #0b7a3e; opacity: 1; }
+.qchip.sh:disabled { color: var(--muted); opacity: .8; }
+.qn { font: 10px system-ui, sans-serif; color: var(--muted); }
+.qhints { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.qhints button { font-size: 12px; padding: 2px 6px; }
+.qgo { font-weight: 600; border-color: var(--acc); }
+.qsmall { font-size: 12px; }
+.qlines { margin: 3px 0; padding-left: 18px; font-size: 13px; }
+.qlines li.done { color: #0b7a3e; }
+.qcnt { font-weight: 700; color: var(--acc); }
+.qcfg label { display: block; font-size: 13px; margin: 3px 0; }
+.qsum { border-collapse: collapse; font-size: 13px; margin: 4px 0; }
+.qsum td { padding: 1px 8px 1px 0; }
+.qsteps { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0 2px; }
+.qst { font-size: 12px; padding: 1px 5px; min-width: 0; }
+.qst.perfect { border-color: #0b7a3e; color: #0b7a3e; }
+.qst.ok { border-color: #5a9a2a; }
+.qst.shown { border-color: #c77700; color: #c77700; }
+#timeline button.qperfect { box-shadow: inset 0 -3px 0 #0b7a3e; }
+#timeline button.qok { box-shadow: inset 0 -3px 0 #8bc34a; }
+#timeline button.qshown { box-shadow: inset 0 -3px 0 #e69500; }
+.s-qneu { stroke: var(--ink); stroke-width: calc(2px * var(--lw)); opacity: .5; }
+.s-qneuh { stroke: var(--ink); stroke-width: calc(1.6px * var(--lw)); stroke-dasharray: 7 4; opacity: .9; }
+.s-qwrong { stroke: #e0002a; stroke-width: calc(9px * var(--lw)); opacity: .35; stroke-linecap: round; }
+svg.sheet path.s-qarea { stroke: #e69500; stroke-width: 2px; stroke-dasharray: 6 4; fill: #e69500; fill-opacity: .08; }
+circle.pt.s-qclick { fill: #e69500; stroke: #fff; stroke-width: 1px; }
 .flash { stroke: #b00020; stroke-width: 2.5px; }
 /* ---------- filtry ---------- */
 .filtgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 8px; font-size: 12px; margin: 4px 0; }
