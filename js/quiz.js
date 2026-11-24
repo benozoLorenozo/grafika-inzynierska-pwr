@@ -104,6 +104,8 @@
   GW.makeQuiz = function (App, h) {
     const $ = h.$;
     const cfg = Object.assign({ order: true, lines: true, vis: true, acc: 'norm' }, h.store.get('quizCfg', {}));
+    ['order', 'lines', 'vis'].forEach((k) => (cfg[k] = cfg[k] !== false));
+    if (['easy', 'norm', 'strict'].indexOf(cfg.acc) < 0) cfg.acc = 'norm';
     const Q = { on: false, states: [], panel: null, settings: false };
 
     const B = () => App.B;

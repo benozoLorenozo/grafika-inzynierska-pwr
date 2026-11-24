@@ -1,0 +1,4 @@
+# Jednolite końce linii w repozytorium (LF), pliki binarne bez konwersji
+* text=auto
+*.png binary
+*.ico binary

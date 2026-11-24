@@ -44,7 +44,7 @@
     subs: null,
     eng: !!store.get('eng', false),
     dims: !!store.get('dims', false),
-    ui: Object.assign({}, GW.UIDEF, store.get('ui', {})),
+    ui: GW.cleanUI(store.get('ui', {})),
   };
   GW.App = App;
   GW.view.p3 = !!store.get('p3', false);
@@ -1019,6 +1019,7 @@
   /* ---------- układ kolumn (przeciąganie) ---------- */
   const main = $('#main');
   let cols = store.get('cols', null);
+  if (!(Array.isArray(cols) && cols.length === 3 && cols.every((x) => typeof x === 'number' && isFinite(x) && x >= 0))) cols = null;
   let layout = [1, 2, 3].indexOf(+store.get('layout', 3)) >= 0 ? +store.get('layout', 3) : 3;
   function applyCols() {
     const W = main.clientWidth || window.innerWidth;
@@ -1260,5 +1261,7 @@
   const [hash, hstep] = location.hash.slice(1).split('/');
   const L0 = GW.lessons.find((l) => l.id === hash);
   selectModule(L0 ? L0.mod : 1, L0 ? L0.id : null);
-  if (hstep) show(+hstep - 1, { anim: false, cam: true, subEnd: true });
+  // numer kroku z adresu: tylko liczba całkowita (zły link nie może zablokować aplikacji)
+  const hk = /^\d{1,3}$/.test(hstep || '') ? parseInt(hstep, 10) : 0;
+  if (L0 && hk >= 1) show(hk - 1, { anim: false, cam: true, subEnd: true });
 })();

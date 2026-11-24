@@ -3,7 +3,9 @@
 Nieoficjalny, studencki portal do nauki grafiki inżynierskiej i geometrii wykreślnej (1. semestr studiów technicznych), przygotowany z myślą o studentach Politechniki Wrocławskiej. Nie jest oficjalnym materiałem uczelni.
 Każda konstrukcja jest rozpisana krok po kroku. Model przestrzenny 3D i rysunek wykreślny 2D są ze sobą powiązane.
 
-**Strona:** https://benozolorenozo.github.io/grafika-inzynierska-pwr/ · [Informacje, prywatność, dostępność](informacje.html)
+**Strona:** https://benozolorenozo.github.io/grafika-inzynierska-pwr/ · [Spis lekcji (wersja tekstowa)](https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/) · [Informacje, prywatność, dostępność](informacje.html)
+
+![GrafInż PWr – geometria wykreślna krok po kroku](og-image.png)
 
 ---
 
@@ -64,16 +66,31 @@ To prywatny projekt edukacyjny, a nie oficjalny materiał uczelni. Treści mogą
 
 ## Część techniczna
 
-- **Stos:** czysty JavaScript (bez budowania), [Three.js r128](https://threejs.org/) z CDN dla 3D, SVG dla rysunku 2D.
-- **Uruchomienie:** otwórz `index.html` w przeglądarce (do pobrania Three.js potrzebny jest internet). Link do kroku: `index.html#m1-transformacja/5`.
+- **Stos:** czysty JavaScript bez kroku budowania, [Three.js r128](https://threejs.org/) z CDN dla 3D, SVG dla rysunku 2D.
+- **Uruchomienie lokalne:** otwórz `index.html` w przeglądarce (do pobrania Three.js potrzebny jest internet) albo uruchom prosty serwer, np. `python -m http.server`, i wejdź na `http://localhost:8000`. Link do kroku: `index.html#m1-transformacja/5`.
 - **Struktura:**
+  - `index.html`, `css/style.css` – aplikacja;
   - `js/math.js` – geometria analityczna (płaszczyzny, wielościany, sumy brył, usuwanie linii niewidocznych, warstwice);
   - `js/core.js` – układ rzutni i budowanie kroków;
   - `js/view3d.js`, `js/view2d.js` – widoki 3D i 2D;
   - `js/app.js` – interfejs;
+  - `js/quiz.js` – tryb „Rozwiąż sam”;
   - `js/teoria.js` – ściągawka i typowe błędy;
   - `js/tools.js` – miarka, podkroki, wymiary, arkusz techniczny, motywy;
   - `js/generators.js` – generatory zadań;
-  - `js/lessons/m1–m6.js` – lekcje.
+  - `js/lessons/m1–m6.js` – lekcje;
+  - `kurs/` – statyczne strony lekcji (generowane, patrz niżej);
+  - `tools/build-seo.js` – generator stron `kurs/` i `sitemap.xml`;
+  - `informacje.html`, `404.html` – strona informacyjna i strona błędu.
+- **Strony kursu i SEO:** `kurs/` zawiera statyczne strony do indeksowania przez wyszukiwarki: spis lekcji, strony modułów (teoria, typowe błędy) i stronę każdej lekcji (algorytm oraz kroki CO / JAK / DLACZEGO z linkami do aplikacji). Generuje je `node tools/build-seo.js` (Node.js, bez zależności) z tych samych plików JS co aplikację. **Po zmianie lekcji, teorii lub `?v=` uruchom go ponownie.** Pozostałe pliki: `robots.txt`, `sitemap.xml`, `og-image.png` (podgląd linku), `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest`; w `index.html` są metadane Open Graph i JSON-LD (schema.org).
+- **Wdrożenie:** GitHub Pages z gałęzi `main` (katalog główny; `.nojekyll` wyłącza przetwarzanie Jekyll). Przy każdej zmianie plików JS/CSS podbij parametr `?v=` w `index.html`, żeby przeglądarki nie używały starej wersji z pamięci podręcznej. Plik `google*.html` służy do weryfikacji w Google Search Console – nie usuwaj go.
+- **Bezpieczeństwo:** strona jest w pełni statyczna (bez serwera, kont, formularzy i ciasteczek). `index.html` ma politykę Content Security Policy (skrypty tylko z własnej domeny, cdnjs i jsDelivr), a biblioteki z CDN są ładowane z sumami kontrolnymi SRI (`integrity`). Przy zmianie wersji biblioteki zaktualizuj `integrity`, a przy dodaniu nowego źródła skryptów także CSP. Ustawienia odczytywane z `localStorage` są walidowane.
 - **Dane użytkownika:** tylko ustawienia interfejsu w `localStorage` (klucze `gw.*`). Brak ciasteczek i analityki.
-- **Strony kursu i SEO:** `kurs/` zawiera statyczne strony do indeksowania przez wyszukiwarki: spis lekcji, strony modułów (teoria, typowe błędy) i stronę każdej lekcji (algorytm oraz kroki CO / JAK / DLACZEGO z linkami do aplikacji). Strony i `sitemap.xml` generuje skrypt `node tools/build-seo.js`, który czyta te same pliki JS co aplikacja. **Po zmianie lekcji, teorii lub `?v=` uruchom go ponownie.** Pozostałe pliki SEO: `robots.txt`, `og-image.png` (podgląd linku), `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest`, `404.html`; w `index.html` są metadane Open Graph i JSON-LD (schema.org).
+
+## Zgłoszenia
+
+Błędy w zadaniach i uwagi można zgłaszać w zakładce [Issues](https://github.com/benozoLorenozo/grafika-inzynierska-pwr/issues).
+
+## Licencja
+
+Kod i treść strony: © autor projektu, wszelkie prawa zastrzeżone (repozytorium jest publiczne do wglądu, ale nie jest udostępnione na licencji open source). Biblioteka [Three.js](https://github.com/mrdoob/three.js) jest dostępna na licencji MIT. Prawa do cytowanych publikacji przysługują ich autorom i wydawcom.

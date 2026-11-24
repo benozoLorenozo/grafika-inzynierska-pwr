@@ -356,6 +356,22 @@
     sepia: { n: 'sepia', ink: '#2b2118', bg3: '#f3ead6', res: '#b3261e', res2: '#7b3f99', aux: '#2f5f9e', aux2: '#2f7d66', hl: '#d6249f', src: '#e07b00', dist: '#2e7d32', acc: '#7a4a1e' },
   };
   GW.UIDEF = { theme: 'light', res: '', res2: '', aux: '', aux2: '', hl: '', src: '', dist: '', acc: '', fs: 1, lw: 1, ls: 1, bg3: '', sheet: '', cursor: true, geo: true, subs: true };
+  // Walidacja ustawień z localStorage: tylko znane klucze, kolory #rrggbb, liczby w zakresie, znany motyw.
+  const UIRNG = { fs: [0.8, 1.5], lw: [0.6, 2.2], ls: [0.8, 1.8] };
+  GW.cleanUI = (raw) => {
+    const s = Object.assign({}, GW.UIDEF);
+    const r = raw && typeof raw === 'object' ? raw : {};
+    Object.keys(GW.UIDEF).forEach((k) => {
+      const d = GW.UIDEF[k],
+        v = r[k];
+      if (v === undefined) return;
+      if (k === 'theme') s[k] = Object.prototype.hasOwnProperty.call(GW.THEMES, v) ? v : d;
+      else if (UIRNG[k]) s[k] = typeof v === 'number' && isFinite(v) ? Math.min(UIRNG[k][1], Math.max(UIRNG[k][0], v)) : d;
+      else if (typeof d === 'boolean') s[k] = !!v;
+      else s[k] = typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : '';
+    });
+    return s;
+  };
   GW.applyUI = (App, s) => {
     const r = document.documentElement.style;
     document.body.dataset.theme = s.theme === 'light' ? '' : s.theme;
@@ -378,7 +394,7 @@
   };
   GW.openSettings = (App, store, onChange) => {
     const box = document.querySelector('#cheat');
-    const s = Object.assign({}, GW.UIDEF, store.get('ui', {}));
+    const s = GW.cleanUI(store.get('ui', {}));
     const th = GW.THEMES[s.theme] || GW.THEMES.light;
     const col = (k, l) => '<label for="ui_' + k + '">' + l + '</label><span><input type="color" id="ui_' + k + '" data-k="' + k + '" value="' + (s[k] || th[k] || '#888888') + '"> <button type="button" data-reset="' + k + '" title="przywróć kolor motywu">↺</button></span>';
     const rng = (k, l, a, b, st) => '<label for="ui_' + k + '">' + l + '</label><span><input type="range" id="ui_' + k + '" data-k="' + k + '" min="' + a + '" max="' + b + '" step="' + st + '" value="' + s[k] + '"> <output>' + Math.round(s[k] * 100) + '%</output></span>';
