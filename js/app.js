@@ -1264,4 +1264,10 @@
   // numer kroku z adresu: tylko liczba całkowita (zły link nie może zablokować aplikacji)
   const hk = /^\d{1,3}$/.test(hstep || '') ? parseInt(hstep, 10) : 0;
   if (L0 && hk >= 1) show(hk - 1, { anim: false, cam: true, subEnd: true });
+  // ekran wczytywania: zdejmij po pierwszym narysowaniu gotowej aplikacji
+  const boot = document.getElementById('boot');
+  if (boot) requestAnimationFrame(() => requestAnimationFrame(() => {
+    boot.classList.add('done');
+    setTimeout(() => boot.remove(), 250);
+  }));
 })();

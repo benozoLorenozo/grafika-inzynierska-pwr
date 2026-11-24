@@ -18,6 +18,14 @@ a { color: var(--acc); }
 #top { display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
 .brand { font-weight: 700; white-space: nowrap; font-size: inherit; margin: 0; line-height: inherit; }
 .vh { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* ---------- ekran wczytywania (znika, gdy aplikacja jest gotowa; awaryjnie po 15 s) ---------- */
+#boot { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--muted); transition: opacity .2s; animation: bootOut .2s 15s forwards; }
+#boot.done { opacity: 0; pointer-events: none; }
+.boot-in { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.boot-bar { position: relative; width: 140px; height: 2px; background: var(--border); overflow: hidden; }
+.boot-bar::after { content: ''; position: absolute; inset: 0; width: 40%; background: var(--acc); animation: bootBar 1s ease-in-out infinite; }
+@keyframes bootBar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@keyframes bootOut { to { opacity: 0; visibility: hidden; } }
 /* ---------- dostępność ---------- */
 .skip { position: absolute; left: -9999px; top: 0; z-index: 30; background: var(--acc); color: var(--accfg); padding: 6px 10px; }
 .skip:focus { left: 6px; top: 6px; }
