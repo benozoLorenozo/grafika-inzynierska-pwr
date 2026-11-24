@@ -90,7 +90,43 @@
         this.onHover && this.onHover(null, null);
         this.onCursor && this.onCursor(null);
       });
+      // Kliknięcie liczy się tylko jako jeden zwykły klik: lewy przycisk, bez przeciągania
+      // (obrót/przesunięcie kamery), krótki, jeden wskaźnik (bez pinch) i nie drugi klik dwukliku.
+      let press = null;
+      dom.addEventListener(
+        'pointerdown',
+        (e) => {
+          if (press && press.ids.size) {
+            press.ids.add(e.pointerId);
+            press.multi = true;
+            return;
+          }
+          press = { x: e.clientX, y: e.clientY, t: performance.now(), btn: e.button, moved: false, multi: false, ids: new Set([e.pointerId]) };
+        },
+        true
+      );
+      window.addEventListener(
+        'pointermove',
+        (e) => {
+          if (!press || !press.ids.has(e.pointerId) || press.moved) return;
+          if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > 4) press.moved = true;
+        },
+        true
+      );
+      const release = (e) => {
+        if (press) press.ids.delete(e.pointerId);
+      };
+      window.addEventListener('pointerup', release, true);
+      window.addEventListener('pointercancel', (e) => {
+        if (press) {
+          press.moved = true;
+          press.ids.delete(e.pointerId);
+        }
+      }, true);
       dom.addEventListener('click', (e) => {
+        const p = press;
+        if (!p || p.moved || p.multi || p.btn !== 0 || e.detail > 1 || performance.now() - p.t > 600) return;
+        if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 4) return;
         const o = this.pickObj(e);
         this.onClick && this.onClick(o ? o.userData.prim : null);
       });
