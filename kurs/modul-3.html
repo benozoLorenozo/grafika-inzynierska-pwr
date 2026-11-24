@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przenikanie brył obrotowych – geometria wykreślna, teoria i zadania krok po kroku | GrafInż PWr</title>
+<meta name="description" content="Przenikanie brył obrotowych – walca, stożka i kuli – metodą płaszczyzn pomocniczych (plasterkową): punkty charakterystyczne, przebieg krzywej przenikania i…">
+<link rel="canonical" href="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-3.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="GrafInż PWr">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:title" content="Przenikanie brył obrotowych – geometria wykreślna, teoria i zadania krok po kroku | GrafInż PWr">
+<meta property="og:description" content="Przenikanie brył obrotowych – walca, stożka i kuli – metodą płaszczyzn pomocniczych (plasterkową): punkty charakterystyczne, przebieg krzywej przenikania i…">
+<meta property="og:url" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-3.html">
+<meta property="og:image" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#1d4f9c">
+<link rel="stylesheet" href="kurs.css?v=20261124d">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"GrafInż PWr","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-3.html"},{"@type":"ListItem","position":2,"name":"Kurs","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/"},{"@type":"ListItem","position":3,"name":"Moduł 3. Przenikanie brył obrotowych","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-3.html"}]},{"@type":"LearningResource","name":"Przenikanie brył obrotowych","description":"Przenikanie brył obrotowych – walca, stożka i kuli – metodą płaszczyzn pomocniczych (plasterkową): punkty charakterystyczne, przebieg krzywej przenikania i widoczność; bryły obrotowe z wielościanami.","inLanguage":"pl","isAccessibleForFree":true,"learningResourceType":"Lesson","isPartOf":{"@type":"Course","@id":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/#kurs","name":"Geometria wykreślna i grafika inżynierska – kurs krok po kroku"},"hasPart":[{"@type":"LearningResource","name":"3.1 Przenikanie brył obrotowych – metoda plasterkowa","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m3-obrotowe.html"},{"@type":"LearningResource","name":"3.2 Bryła obrotowa + wielościan","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m3-mieszane.html"}]}]}</script>
+</head>
+<body>
+<a class="skip" href="#tresc">Przejdź do treści</a>
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../favicon.svg" alt="" width="28" height="28"> GrafInż PWr</a>
+  <nav aria-label="Nawigacja główna">
+    <a href="index.html">Kurs</a>
+    <a href="../index.html" class="cta">▶ Aplikacja 3D</a>
+  </nav>
+</header>
+<nav class="crumbs" aria-label="Okruszki"><ol><li><a href="../index.html">GrafInż PWr</a></li><li><a href="index.html">Kurs</a></li><li aria-current="page">Moduł 3. Przenikanie brył obrotowych</li></ol></nav>
+<main id="tresc">
+<h1>Moduł 3. Przenikanie brył obrotowych</h1>
+<p class="lead">Przenikanie brył obrotowych – walca, stożka i kuli – metodą płaszczyzn pomocniczych (plasterkową): punkty charakterystyczne, przebieg krzywej przenikania i widoczność; bryły obrotowe z wielościanami.</p>
+<h2>Lekcje</h2>
+<ul class="lessons"><li><a href="m3-obrotowe.html"><b>3.1</b> Przenikanie brył obrotowych – metoda plasterkowa</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 3, zadanie 1–2</span><p>Przenikanie brył obrotowych – metoda plasterkowa – rozwiązanie krok po kroku (9 kroków, rysunek 2D i model 3D). Wybór płaszczyzn pomocniczych: takie, które…</p></li><li><a href="m3-mieszane.html"><b>3.2</b> Bryła obrotowa + wielościan</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 3, zadanie 3–4</span><p>Bryła obrotowa + wielościan – rozwiązanie krok po kroku (9 kroków, rysunek 2D i model 3D). Wybór płaszczyzn pomocniczych: takie, które tną obie bryły wzdłuż…</p></li></ul>
+<h2>Teoria w pigułce</h2>
+<div class="cheat"><div class="cols"><div>
+<h3>Metoda plasterkowa (płaszczyzn pomocniczych)</h3>
+<ol><li>Wybierz płaszczyzny tnące <b>obie</b> bryły wzdłuż linii łatwych do narysowania (okręgi, proste). Dla osi pionowych → płaszczyzny poziome.</li>
+<li>W π<sub>2</sub> ślad v<sub>ε</sub> ∥ x<sub>12</sub>; w π<sub>1</sub> przekroje w rzeczywistej wielkości; punkty wspólne przekrojów → punkty krzywej.</li>
+<li>Odnoszące → rzuty pionowe (i boczne).</li></ol>
+<h3>Przekroje płaszczyzną poziomą</h3>
+<table><tr><td>stożek, walec pionowy, kula</td><td>okrąg</td></tr><tr><td>walec poziomy</td><td>dwie tworzące (proste)</td></tr><tr><td>graniastosłup</td><td>wielokąt</td></tr></table>
+</div><div>
+<h3>Punkty charakterystyczne (zawsze!)</h3>
+<ul><li>najwyższy i najniższy punkt krzywej;</li>
+<li>punkty na <b>tworzących konturowych</b> w każdym rzucie (tu zmienia się widoczność, krzywa jest styczna do konturu);</li>
+<li>przebicia krawędzi wielościanu z bryłą obrotową;</li>
+<li>wierzchołek / punkt osobliwy (np. krzywa przez wierzchołek stożka).</li></ul>
+<h3>Widoczność krzywej</h3>
+<p>Punkt widoczny ⇔ leży na widocznej części <b>obu</b> powierzchni. π<sub>1</sub>: górne części; π<sub>2</sub>: przednie; π<sub>3</sub> (z lewej): lewe.</p>
+<h3>Przekroje stożka płaszczyzną</h3>
+<p>elipsa (płaszczyzna mniej stroma niż tworząca), parabola (równoległa do tworzącej), hiperbola (bardziej stroma).</p>
+</div></div></div>
+<h2>Typowe błędy na kolokwium</h2>
+<ul class="mist"><li>Brak punktów charakterystycznych (na konturach, najwyższego/najniższego) – krzywa „ścina” zakręty.</li><li>Krzywa narysowana linijką lub łamaną zamiast płynnej linii (krzywikiem).</li><li>Zła widoczność: krzywa widoczna tylko gdy leży na widocznych częściach <b>obu</b> brył.</li><li>Kontur bryły rysowany także wewnątrz drugiej bryły.</li><li>Promień przekroju stożka odczytany z niewłaściwej wysokości (zawsze na poziomie śladu v<sub>ε</sub>).</li></ul>
+<nav class="pn" aria-label="Moduły"><a rel="prev" href="modul-2.html">← Moduł 2. Przenikanie wielościanów</a><a rel="next" href="modul-4.html">Moduł 4. Aksonometria i przekrój →</a></nav>
+</main>
+<footer class="foot">
+  <p><b>GrafInż PWr</b> – nieoficjalny, studencki portal do nauki geometrii wykreślnej i grafiki inżynierskiej. Nie jest oficjalnym materiałem Politechniki Wrocławskiej.</p>
+  <p><a href="index.html">Spis lekcji</a> · <a href="../index.html">Aplikacja interaktywna</a> · <a href="../informacje.html">Informacje i prywatność</a></p>
+</footer>
+</body>
+</html>

@@ -76,3 +76,4 @@ To prywatny projekt edukacyjny, a nie oficjalny materiał uczelni. Treści mogą
   - `js/generators.js` – generatory zadań;
   - `js/lessons/m1–m6.js` – lekcje.
 - **Dane użytkownika:** tylko ustawienia interfejsu w `localStorage` (klucze `gw.*`). Brak ciasteczek i analityki.
+- **Strony kursu i SEO:** `kurs/` zawiera statyczne strony do indeksowania przez wyszukiwarki: spis lekcji, strony modułów (teoria, typowe błędy) i stronę każdej lekcji (algorytm oraz kroki CO / JAK / DLACZEGO z linkami do aplikacji). Strony i `sitemap.xml` generuje skrypt `node tools/build-seo.js`, który czyta te same pliki JS co aplikacja. **Po zmianie lekcji, teorii lub `?v=` uruchom go ponownie.** Pozostałe pliki SEO: `robots.txt`, `og-image.png` (podgląd linku), `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest`, `404.html`; w `index.html` są metadane Open Graph i JSON-LD (schema.org).

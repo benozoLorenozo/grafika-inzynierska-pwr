@@ -3,17 +3,63 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="GrafInż PWr – nieoficjalny portal edukacyjny grafiki inżynierskiej i geometrii wykreślnej: rzuty Monge’a, przenikania, aksonometria, rzut cechowany, perspektywa – konstrukcje krok po kroku w 2D i 3D.">
-<title>GrafInż PWr – portal edukacyjny grafiki inżynierskiej</title>
+<title>Geometria wykreślna krok po kroku – interaktywny kurs 3D | GrafInż PWr</title>
+<meta name="description" content="Darmowa aplikacja do nauki geometrii wykreślnej i grafiki inżynierskiej: rzuty Monge’a, przenikanie brył, aksonometria, rzut cechowany, perspektywa – krok po kroku w 2D i 3D.">
+<link rel="canonical" href="https://benozolorenozo.github.io/grafika-inzynierska-pwr/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GrafInż PWr">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:title" content="Geometria wykreślna krok po kroku – interaktywny kurs 3D">
+<meta property="og:description" content="Rzuty Monge’a, przenikanie brył, aksonometria, rzut cechowany i perspektywa – każda konstrukcja krok po kroku, z modelem 3D powiązanym z rysunkiem 2D.">
+<meta property="og:url" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/">
+<meta property="og:image" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="GrafInż PWr – geometria wykreślna krok po kroku">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <meta name="theme-color" content="#1d4f9c">
-<link rel="stylesheet" href="css/style.css?v=20261124c">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://benozolorenozo.github.io/grafika-inzynierska-pwr/#site",
+      "name": "GrafInż PWr",
+      "alternateName": "Geometria wykreślna krok po kroku",
+      "url": "https://benozolorenozo.github.io/grafika-inzynierska-pwr/",
+      "inLanguage": "pl"
+    },
+    {
+      "@type": "WebApplication",
+      "name": "GrafInż PWr – geometria wykreślna krok po kroku",
+      "url": "https://benozolorenozo.github.io/grafika-inzynierska-pwr/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Dowolny (przeglądarka internetowa)",
+      "browserRequirements": "Wymaga JavaScript i WebGL",
+      "inLanguage": "pl",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "PLN" },
+      "description": "Interaktywny kurs geometrii wykreślnej i grafiki inżynierskiej: rzuty Monge’a, przenikanie wielościanów i brył obrotowych, aksonometria, rzut cechowany (roboty ziemne), perspektywa. Konstrukcje krok po kroku z modelem 3D, tryb Rozwiąż sam i generator zadań.",
+      "featureList": ["Konstrukcje krok po kroku", "Model 3D powiązany z rysunkiem 2D", "Tryb Rozwiąż sam z oceną", "Generator zadań", "Ściągawka teorii i typowe błędy"],
+      "isPartOf": { "@id": "https://benozolorenozo.github.io/grafika-inzynierska-pwr/#site" }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="css/style.css?v=20261124d">
 </head>
 <body>
 <a class="skip" href="#stepBox">Przejdź do opisu kroku</a>
-<noscript><p class="nojs">Ta strona wymaga włączonej obsługi JavaScript (rysunki i model 3D są generowane w przeglądarce).</p></noscript>
+<noscript><p class="nojs">Ta strona wymaga włączonej obsługi JavaScript (rysunki i model 3D są generowane w przeglądarce). Opisy wszystkich konstrukcji w wersji tekstowej znajdziesz w <a href="kurs/">spisie lekcji kursu</a>.</p></noscript>
 <header id="top">
-  <div class="brand" title="Nieoficjalny, studencki portal edukacyjny">GrafInż PWr · portal edukacyjny</div>
+  <h1 class="brand" title="Nieoficjalny, studencki portal edukacyjny: geometria wykreślna i grafika inżynierska krok po kroku">GrafInż PWr · portal edukacyjny<span class="vh"> – geometria wykreślna i grafika inżynierska krok po kroku</span></h1>
   <nav id="mods" aria-label="Moduły kursu"></nav>
   <div class="tools" role="toolbar" aria-label="Narzędzia">
     <button id="bQuiz" title="Rozwiąż sam: kolejność kroków, punkty, przebieg linii i widoczność – aplikacja ocenia (R)">🎯 Rozwiąż sam</button>
@@ -21,6 +67,7 @@
     <button id="bCheat" title="Ściągawka – teoria w pigułce (T)">📖 Ściągawka</button>
     <button id="bUI" title="Wygląd: motyw, kolory, wielkość tekstu i linii, ułatwienia">⚙ Wygląd</button>
     <button id="bKeys" title="Skróty klawiszowe" aria-label="Skróty klawiszowe">⌨</button>
+    <a class="btnlink" href="kurs/" title="Spis lekcji: opisy wszystkich konstrukcji krok po kroku w wersji tekstowej">📚 Lekcje</a>
     <a class="btnlink" href="informacje.html" title="Informacje o stronie, prywatność, dostępność, zastrzeżenia">ℹ Informacje</a>
   </div>
 </header>
@@ -76,20 +123,20 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="js/math.js?v=20261124c"></script>
-<script src="js/core.js?v=20261124c"></script>
-<script src="js/view3d.js?v=20261124c"></script>
-<script src="js/view2d.js?v=20261124c"></script>
-<script src="js/teoria.js?v=20261124c"></script>
-<script src="js/tools.js?v=20261124c"></script>
-<script src="js/lessons/m1.js?v=20261124c"></script>
-<script src="js/lessons/m2.js?v=20261124c"></script>
-<script src="js/lessons/m3.js?v=20261124c"></script>
-<script src="js/lessons/m4.js?v=20261124c"></script>
-<script src="js/lessons/m5.js?v=20261124c"></script>
-<script src="js/lessons/m6.js?v=20261124c"></script>
-<script src="js/generators.js?v=20261124c"></script>
-<script src="js/quiz.js?v=20261124c"></script>
-<script src="js/app.js?v=20261124c"></script>
+<script src="js/math.js?v=20261124d"></script>
+<script src="js/core.js?v=20261124d"></script>
+<script src="js/view3d.js?v=20261124d"></script>
+<script src="js/view2d.js?v=20261124d"></script>
+<script src="js/teoria.js?v=20261124d"></script>
+<script src="js/tools.js?v=20261124d"></script>
+<script src="js/lessons/m1.js?v=20261124d"></script>
+<script src="js/lessons/m2.js?v=20261124d"></script>
+<script src="js/lessons/m3.js?v=20261124d"></script>
+<script src="js/lessons/m4.js?v=20261124d"></script>
+<script src="js/lessons/m5.js?v=20261124d"></script>
+<script src="js/lessons/m6.js?v=20261124d"></script>
+<script src="js/generators.js?v=20261124d"></script>
+<script src="js/quiz.js?v=20261124d"></script>
+<script src="js/app.js?v=20261124d"></script>
 </body>
 </html>

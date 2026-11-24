@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rzuty Monge’a – geometria wykreślna, teoria i zadania krok po kroku | GrafInż PWr</title>
+<meta name="description" content="Rzuty Monge’a od podstaw: rzut punktu i prostej, ślady prostej i płaszczyzny, przebicie prostej z płaszczyzną (płaszczyzna rzutująca, transformacja)…">
+<link rel="canonical" href="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-1.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="GrafInż PWr">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:title" content="Rzuty Monge’a – geometria wykreślna, teoria i zadania krok po kroku | GrafInż PWr">
+<meta property="og:description" content="Rzuty Monge’a od podstaw: rzut punktu i prostej, ślady prostej i płaszczyzny, przebicie prostej z płaszczyzną (płaszczyzna rzutująca, transformacja)…">
+<meta property="og:url" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-1.html">
+<meta property="og:image" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#1d4f9c">
+<link rel="stylesheet" href="kurs.css?v=20261124d">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"GrafInż PWr","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-1.html"},{"@type":"ListItem","position":2,"name":"Kurs","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/"},{"@type":"ListItem","position":3,"name":"Moduł 1. Rzuty Monge’a","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-1.html"}]},{"@type":"LearningResource","name":"Rzuty Monge’a","description":"Rzuty Monge’a od podstaw: rzut punktu i prostej, ślady prostej i płaszczyzny, przebicie prostej z płaszczyzną (płaszczyzna rzutująca, transformacja), rzeczywista wielkość figury na rzutniach dodatkowych π₄ i π₅, przenikanie trójkątów i rzutnia boczna π₃.","inLanguage":"pl","isAccessibleForFree":true,"learningResourceType":"Lesson","isPartOf":{"@type":"Course","@id":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/#kurs","name":"Geometria wykreślna i grafika inżynierska – kurs krok po kroku"},"hasPart":[{"@type":"LearningResource","name":"1.1 Punkt, prosta, ślady, płaszczyzna","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m1-elementy.html"},{"@type":"LearningResource","name":"1.2 Przebicie prostej z trójkątem (płaszczyzna rzutująca)","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m1-przebicie.html"},{"@type":"LearningResource","name":"1.3 Przebicie metodą transformacji (π₄)","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m1-przebicie-tr.html"},{"@type":"LearningResource","name":"1.4 Transformacja: rzeczywista wielkość (π₄, π₅)","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m1-transformacja.html"},{"@type":"LearningResource","name":"1.5 Przenikanie trójkątów","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m1-trojkaty.html"}]}]}</script>
+</head>
+<body>
+<a class="skip" href="#tresc">Przejdź do treści</a>
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../favicon.svg" alt="" width="28" height="28"> GrafInż PWr</a>
+  <nav aria-label="Nawigacja główna">
+    <a href="index.html">Kurs</a>
+    <a href="../index.html" class="cta">▶ Aplikacja 3D</a>
+  </nav>
+</header>
+<nav class="crumbs" aria-label="Okruszki"><ol><li><a href="../index.html">GrafInż PWr</a></li><li><a href="index.html">Kurs</a></li><li aria-current="page">Moduł 1. Rzuty Monge’a</li></ol></nav>
+<main id="tresc">
+<h1>Moduł 1. Rzuty Monge’a</h1>
+<p class="lead">Rzuty Monge’a od podstaw: rzut punktu i prostej, ślady prostej i płaszczyzny, przebicie prostej z płaszczyzną (płaszczyzna rzutująca, transformacja), rzeczywista wielkość figury na rzutniach dodatkowych π₄ i π₅, przenikanie trójkątów i rzutnia boczna π₃.</p>
+<h2>Lekcje</h2>
+<ul class="lessons"><li><a href="m1-elementy.html"><b>1.1</b> Punkt, prosta, ślady, płaszczyzna</a><p>Punkt, prosta, ślady, płaszczyzna – rozwiązanie krok po kroku (12 kroków, rysunek 2D i model 3D). Rzut punktu: z punktu prowadzimy promienie ⟂ π₁ i ⟂ π₂. A′…</p></li><li><a href="m1-przebicie.html"><b>1.2</b> Przebicie prostej z trójkątem (płaszczyzna rzutująca)</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 1, zadanie 2</span><p>Przebicie prostej z trójkątem (płaszczyzna rzutująca) – rozwiązanie krok po kroku (7 kroków, rysunek 2D i model 3D). Płaszczyzna pomocnicza: przez prostą…</p></li><li><a href="m1-przebicie-tr.html"><b>1.3</b> Przebicie metodą transformacji (π₄)</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 1, zadanie 1</span><p>Przebicie metodą transformacji (π₄) – rozwiązanie krok po kroku (9 kroków, rysunek 2D i model 3D). Prowadzimy poziomą h płaszczyzny trójkąta (h″ ∥ x₁₂). Nowa…</p></li><li><a href="m1-transformacja.html"><b>1.4</b> Transformacja: rzeczywista wielkość (π₄, π₅)</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 1, zadanie 3</span><p>Transformacja: rzeczywista wielkość (π₄, π₅) – rozwiązanie krok po kroku (8 kroków, rysunek 2D i model 3D). Cel: ustawić nową rzutnię równolegle do…</p></li><li><a href="m1-trojkaty.html"><b>1.5</b> Przenikanie trójkątów</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 1, zadanie 4</span><p>Przenikanie trójkątów – rozwiązanie krok po kroku (9 kroków, rysunek 2D i model 3D). Odcinek przenikania dwóch trójkątów ma końce w punktach przebicia…</p></li></ul>
+<h2>Teoria w pigułce</h2>
+<div class="cheat"><div class="cols"><div>
+<h3>Oznaczenia</h3>
+<table>
+<tr><td>π<sub>1</sub>, π<sub>2</sub>, π<sub>3</sub></td><td>rzutnia pozioma, pionowa (czołowa), boczna (profilowa)</td></tr>
+<tr><td>A′, A″, A‴</td><td>rzut poziomy, pionowy, boczny punktu A</td></tr>
+<tr><td>A<sup>IV</sup>, A<sup>V</sup></td><td>rzuty na rzutnie dodatkowe (transformacja)</td></tr>
+<tr><td>x<sub>12</sub>, x<sub>23</sub>, x<sub>14</sub>, x<sub>45</sub></td><td>osie rzutów (krawędzie rzutni)</td></tr>
+<tr><td>h<sub>α</sub>, v<sub>α</sub></td><td>ślad poziomy i pionowy płaszczyzny α</td></tr>
+<tr><td>H, V</td><td>ślad poziomy (z = 0) i pionowy (y = 0) prostej</td></tr>
+<tr><td>X<sub>α</sub></td><td>punkt zbiegu śladów na osi x<sub>12</sub></td></tr>
+</table>
+<h3>Rzut punktu</h3>
+<ul><li>A′ = (x, y), A″ = (x, z); A′ i A″ leżą na jednej <b>odnoszącej ⟂ x<sub>12</sub></b>.</li>
+<li>|A″x<sub>12</sub>| = z (odległość od π<sub>1</sub>), |A′x<sub>12</sub>| = y (odległość od π<sub>2</sub>).</li>
+<li>π<sub>3</sub>: A‴ leży na odnoszącej poziomej z A″, w odległości y od osi x<sub>23</sub> (przenosimy z π<sub>1</sub> łukiem lub prostą pod 45°).</li></ul>
+<h3>Proste szczególne</h3>
+<ul><li><b>pozioma</b> h: h″ ∥ x<sub>12</sub> (h′ – prawdziwy kierunek i długość)</li>
+<li><b>czołowa</b> f: f′ ∥ x<sub>12</sub> (f″ – prawdziwa długość)</li>
+<li><b>rzutująca</b>: jeden rzut jest punktem</li></ul>
+<h3>Przynależność</h3>
+<ul><li>Punkt ∈ prosta ⇔ rzuty punktu leżą na jednoimiennych rzutach prostej.</li>
+<li>Prosta ∈ płaszczyzna ⇔ dwa jej punkty leżą w płaszczyźnie (np. jej ślady leżą na śladach płaszczyzny).</li></ul>
+</div><div>
+<h3>Przebicie prostej z płaszczyzną (trójkątem)</h3>
+<ol><li>Przez prostą l prowadzimy płaszczyznę rzutującą ε (ślad pokrywa się z l′ lub l″).</li>
+<li>k = ε ∩ trójkąt: punkty 1, 2 = ślad ∩ boki, przenosimy odnoszącymi.</li>
+<li>P = k ∩ l w drugim rzucie, odnosząca → drugi rzut P.</li></ol>
+<p><b>Metoda transformacji:</b> π<sub>4</sub> ⟂ pozioma h płaszczyzny (x<sub>14</sub> ⟂ h′) → płaszczyzna jest w π<sub>4</sub> odcinkiem → P<sup>IV</sup> = l<sup>IV</sup> ∩ odcinek → wracamy odnoszącymi.</p>
+<h3>Widoczność – punkty zbieżne</h3>
+<ul><li>W π<sub>1</sub> widoczny jest punkt <b>wyższy</b> (większe z – dalej od x<sub>12</sub> w π<sub>2</sub>).</li>
+<li>W π<sub>2</sub> widoczny jest punkt <b>bliższy</b> (większe y – dalej od x<sub>12</sub> w π<sub>1</sub>).</li>
+<li>W π<sub>3</sub> (widok z lewej) widoczny jest punkt o <b>mniejszym x</b>.</li>
+<li>Widoczność zmienia się tylko w punkcie przebicia i na konturze.</li></ul>
+<h3>Transformacja</h3>
+<ul><li>Zawsze zostaje jedna stara rzutnia, a drugą porzucamy.</li>
+<li>Nowa odległość od nowej osi = odległość rzutu <b>porzucanego</b> od starej osi.</li>
+<li>Prawdziwa długość odcinka: π<sub>4</sub> ∥ odcinek (x<sub>14</sub> ∥ A′B′).</li>
+<li>Rzeczywista wielkość figury: π<sub>4</sub> ⟂ h (płaszczyzna rzutująca), π<sub>5</sub> ∥ figura (x<sub>45</sub> ∥ odcinek w π<sub>4</sub>).</li></ul>
+<h3>Linie</h3>
+<p>widoczne – <b>ciągła gruba</b>; niewidoczne – <b>kreskowa cienka</b>; odnoszące i konstrukcyjne – ciągłe cienkie.</p>
+</div></div></div>
+<h2>Typowe błędy na kolokwium</h2>
+<ul class="mist"><li>Linia odnosząca nie jest prostopadła do osi (zwłaszcza x<sub>14</sub>, x<sub>45</sub> przy transformacji).</li><li>Przenoszenie odległości z <b>niewłaściwej</b> rzutni – zawsze z porzucanej, od starej osi.</li><li>Punkt przebicia poza trójkątem/odcinkiem: trzeba to stwierdzić, a nie „ciągnąć” widoczność.</li><li>Widoczność ustalona „na oko” zamiast punktami zbieżnymi; brak zmiany widoczności w punkcie P.</li><li>Niewidoczne linie rysowane grubo albo widoczne cienko.</li></ul>
+<nav class="pn" aria-label="Moduły"><span></span><a rel="next" href="modul-2.html">Moduł 2. Przenikanie wielościanów →</a></nav>
+</main>
+<footer class="foot">
+  <p><b>GrafInż PWr</b> – nieoficjalny, studencki portal do nauki geometrii wykreślnej i grafiki inżynierskiej. Nie jest oficjalnym materiałem Politechniki Wrocławskiej.</p>
+  <p><a href="index.html">Spis lekcji</a> · <a href="../index.html">Aplikacja interaktywna</a> · <a href="../informacje.html">Informacje i prywatność</a></p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://benozolorenozo.github.io/grafika-inzynierska-pwr/sitemap.xml

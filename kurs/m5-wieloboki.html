@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krawędź przenikania dwóch wieloboków – geometria wykreślna krok po kroku | GrafInż PWr</title>
+<meta name="description" content="Krawędź przenikania dwóch wieloboków – rozwiązanie krok po kroku (5 kroków, rysunek 2D i model 3D). Stopniujemy boki obu wieloboków i rysujemy warstwice obu…">
+<link rel="canonical" href="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="GrafInż PWr">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:title" content="Krawędź przenikania dwóch wieloboków – geometria wykreślna krok po kroku | GrafInż PWr">
+<meta property="og:description" content="Krawędź przenikania dwóch wieloboków – rozwiązanie krok po kroku (5 kroków, rysunek 2D i model 3D). Stopniujemy boki obu wieloboków i rysujemy warstwice obu…">
+<meta property="og:url" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html">
+<meta property="og:image" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#1d4f9c">
+<link rel="stylesheet" href="kurs.css?v=20261124d">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"GrafInż PWr","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html"},{"@type":"ListItem","position":2,"name":"Kurs","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/"},{"@type":"ListItem","position":3,"name":"Moduł 5. Rzut cechowany","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-5.html"},{"@type":"ListItem","position":4,"name":"Krawędź przenikania dwóch wieloboków","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html"}]},{"@type":"LearningResource","name":"5.5 Krawędź przenikania dwóch wieloboków","description":"Krawędź przenikania dwóch wieloboków – rozwiązanie krok po kroku (5 kroków, rysunek 2D i model 3D). Stopniujemy boki obu wieloboków i rysujemy warstwice obu…","inLanguage":"pl","isAccessibleForFree":true,"learningResourceType":"Exercise","educationalLevel":"Studia I stopnia","teaches":"Rzut cechowany","isPartOf":{"@type":"Course","@id":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/#kurs","name":"Geometria wykreślna i grafika inżynierska – kurs krok po kroku"},"url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html"},{"@type":"HowTo","name":"Krawędź przenikania dwóch wieloboków","description":"Krawędź przenikania dwóch wieloboków – rozwiązanie krok po kroku (5 kroków, rysunek 2D i model 3D). Stopniujemy boki obu wieloboków i rysujemy warstwice obu…","inLanguage":"pl","step":[{"@type":"HowToStep","position":1,"name":"Dane: wieloboki ABCD i EFG","text":"Wielobok A(3,0), B(1,0), C(-1,0), D(1,1) oraz trójkąt E(0,0), F(3,0), G(2,0). Wyznaczyć krawędź przenikania i widoczność. Najedź na wierzchołki – w 3D zobaczysz ich wysokości.","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html#krok-1"},{"@type":"HowToStep","position":2,"name":"Stopniowanie boków i warstwice obu płaszczyzn","text":"Warstwice ABCD (brązowe) i EFG (niebieskie) co 1 m. Na bokach o różnych cechach wyznaczamy punkty całkowite (Tales) i łączymy równe cechy.","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html#krok-2"},{"@type":"HowToStep","position":3,"name":"Prosta k = krawędź przecięcia płaszczyzn","text":"Punkty przecięcia warstwic o równych cechach: -2, -1, 0, 1, 2, 3, 4, 5, 6 → prosta k. Gdy warstwice o danej cesze nie przecinają się w obrębie rysunku, przedłużamy je.","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html#krok-3"},{"@type":"HowToStep","position":4,"name":"Krawędź przenikania MN","text":"Z prostej k bierzemy część leżącą w obu wielobokach: odcinek MN. Końce M, N to punkty, w których k wychodzi z jednego z wieloboków – czyli przebicia boków jednego wieloboku płaszczyzną drugiego.","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html#krok-4"},{"@type":"HowToStep","position":5,"name":"Widoczność wieloboków","text":"Boki widoczne z góry – grubo, zasłonięte – kreskowo cienko. W miejscu, gdzie rzuty boków się krzyżują, porównujemy cechy obu punktów zbieżnych: wyżej leżący jest widoczny. Widoczność zmienia się na MN.","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m5-wieloboki.html#krok-5"}]}]}</script>
+</head>
+<body>
+<a class="skip" href="#tresc">Przejdź do treści</a>
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../favicon.svg" alt="" width="28" height="28"> GrafInż PWr</a>
+  <nav aria-label="Nawigacja główna">
+    <a href="index.html">Kurs</a>
+    <a href="../index.html" class="cta">▶ Aplikacja 3D</a>
+  </nav>
+</header>
+<nav class="crumbs" aria-label="Okruszki"><ol><li><a href="../index.html">GrafInż PWr</a></li><li><a href="index.html">Kurs</a></li><li><a href="modul-5.html">Moduł 5. Rzut cechowany</a></li><li aria-current="page">Krawędź przenikania dwóch wieloboków</li></ol></nav>
+<main id="tresc">
+<h1>5.5 Krawędź przenikania dwóch wieloboków</h1>
+<p class="meta">Moduł 5: <a href="modul-5.html">Rzut cechowany</a> · <span class="badge">📋 Lista 5, zadanie 4</span> · 5 kroków</p>
+<p><a class="cta" href="../index.html#m5-wieloboki">▶ Otwórz interaktywną konstrukcję (3D + 2D)</a></p>
+<h2>Algorytm</h2>
+<div class="algo"><ol><li>Stopniujemy boki obu wieloboków i rysujemy warstwice obu płaszczyzn.</li><li><b>Prosta k</b> = przez punkty przecięcia warstwic o równych cechach.</li><li>Część k leżąca jednocześnie w obu wielobokach = <b>krawędź przenikania</b> MN (jej końce to przebicia boków jednego wieloboku z drugim).</li><li><b>Widoczność</b> z góry: po jednej stronie MN wyżej jest jeden wielobok, po drugiej – drugi.</li></ol></div>
+<h2>Konstrukcja krok po kroku</h2>
+<p class="muted">Opis dla przykładowych danych z aplikacji. W aplikacji możesz zmienić dane, wylosować nowy wariant zadania albo rozwiązać je samodzielnie w trybie „Rozwiąż sam”.</p>
+<ol class="steps">
+<li id="krok-1"><h3>Dane: wieloboki ABCD i EFG</h3><div class="co"><span class="tag">Co</span>Wielobok A(3,0), B(1,0), C(-1,0), D(1,1) oraz trójkąt E(0,0), F(3,0), G(2,0). Wyznaczyć krawędź przenikania i widoczność.</div><div class="jak"><span class="tag">Jak</span>Najedź na wierzchołki – w 3D zobaczysz ich wysokości.</div><div class="why"><span class="tag">Dlaczego</span>Dwa wieloboki płaskie przenikają się wzdłuż odcinka leżącego na krawędzi przecięcia ich płaszczyzn.</div><p class="open"><a href="../index.html#m5-wieloboki/1">Pokaż krok 1 w 3D i 2D →</a></p></li>
+<li id="krok-2"><h3>Stopniowanie boków i warstwice obu płaszczyzn</h3><div class="co"><span class="tag">Co</span>Warstwice ABCD (brązowe) i EFG (niebieskie) co 1 m.</div><div class="jak"><span class="tag">Jak</span>Na bokach o różnych cechach wyznaczamy punkty całkowite (Tales) i łączymy równe cechy.</div><div class="why"><span class="tag">Dlaczego</span>Warstwice to proste poziome – przecięcie dwóch płaszczyzn znajdziemy, porównując warstwice o tej samej cesze.</div><p class="open"><a href="../index.html#m5-wieloboki/2">Pokaż krok 2 w 3D i 2D →</a></p></li>
+<li id="krok-3"><h3>Prosta k = krawędź przecięcia płaszczyzn</h3><div class="co"><span class="tag">Co</span>Punkty przecięcia warstwic o równych cechach: -2, -1, 0, 1, 2, 3, 4, 5, 6 → prosta <b>k</b>.</div><div class="jak"><span class="tag">Jak</span>Gdy warstwice o danej cesze nie przecinają się w obrębie rysunku, przedłużamy je.</div><div class="why"><span class="tag">Dlaczego</span>Punkt przecięcia warstwic o cesze n leży na wysokości n w obu płaszczyznach – należy do ich krawędzi.</div><p class="open"><a href="../index.html#m5-wieloboki/3">Pokaż krok 3 w 3D i 2D →</a></p></li>
+<li id="krok-4"><h3>Krawędź przenikania MN</h3><div class="co"><span class="tag">Co</span>Z prostej k bierzemy część leżącą w obu wielobokach: odcinek <b>MN</b>.</div><div class="jak"><span class="tag">Jak</span>Końce M, N to punkty, w których k wychodzi z jednego z wieloboków – czyli przebicia boków jednego wieloboku płaszczyzną drugiego.</div><div class="why"><span class="tag">Dlaczego</span>Punkt krawędzi przenikania musi należeć do obu figur, nie tylko do obu płaszczyzn.</div><p class="open"><a href="../index.html#m5-wieloboki/4">Pokaż krok 4 w 3D i 2D →</a></p></li>
+<li id="krok-5"><h3>Widoczność wieloboków</h3><div class="co"><span class="tag">Co</span>Boki widoczne z góry – grubo, zasłonięte – kreskowo cienko.</div><div class="jak"><span class="tag">Jak</span>W miejscu, gdzie rzuty boków się krzyżują, porównujemy cechy obu punktów zbieżnych: wyżej leżący jest widoczny. Widoczność zmienia się na MN.</div><div class="why"><span class="tag">Dlaczego</span>Z góry zasłania to, co wyżej – po każdej stronie krawędzi przenikania wyżej leży inny wielobok.</div><p class="open"><a href="../index.html#m5-wieloboki/5">Pokaż krok 5 w 3D i 2D →</a></p></li>
+</ol>
+<h2>Typowe błędy</h2>
+<ul class="mist"><li>Krawędź przenikania ograniczamy do części <b>wspólnej obu wieloboków</b> – nie rysujemy jej na całej długości prostej k.</li><li>Widoczność boków ustalamy w każdym „oknie” rzutu: wyżej leżący wielobok zasłania niżej leżący.</li></ul>
+<p><a class="cta" href="../index.html#m5-wieloboki">▶ Rozwiąż to zadanie w aplikacji</a></p>
+<nav class="pn" aria-label="Lekcje"><a rel="prev" href="m5-przeciecie.html">← 5.4 Krawędź dwóch płaszczyzn (skale nachylenia), przebicie prostej</a><a rel="next" href="m5-skarpy.html">5.6 Roboty ziemne: skarpy nasypów i wykopów (platforma, droga) →</a></nav>
+</main>
+<footer class="foot">
+  <p><b>GrafInż PWr</b> – nieoficjalny, studencki portal do nauki geometrii wykreślnej i grafiki inżynierskiej. Nie jest oficjalnym materiałem Politechniki Wrocławskiej.</p>
+  <p><a href="index.html">Spis lekcji</a> · <a href="../index.html">Aplikacja interaktywna</a> · <a href="../informacje.html">Informacje i prywatność</a></p>
+</footer>
+</body>
+</html>

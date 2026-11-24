@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przenikanie wielościanów – geometria wykreślna, teoria i zadania krok po kroku | GrafInż PWr</title>
+<meta name="description" content="Przenikanie wielościanów (graniastosłupów i ostrosłupów): metoda krawędzi i płaszczyzn pomocniczych, kolejność łączenia punktów linii przenikania i…">
+<link rel="canonical" href="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-2.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="GrafInż PWr">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:title" content="Przenikanie wielościanów – geometria wykreślna, teoria i zadania krok po kroku | GrafInż PWr">
+<meta property="og:description" content="Przenikanie wielościanów (graniastosłupów i ostrosłupów): metoda krawędzi i płaszczyzn pomocniczych, kolejność łączenia punktów linii przenikania i…">
+<meta property="og:url" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-2.html">
+<meta property="og:image" content="https://benozolorenozo.github.io/grafika-inzynierska-pwr/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#1d4f9c">
+<link rel="stylesheet" href="kurs.css?v=20261124d">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"GrafInż PWr","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-2.html"},{"@type":"ListItem","position":2,"name":"Kurs","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/"},{"@type":"ListItem","position":3,"name":"Moduł 2. Przenikanie wielościanów","item":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/modul-2.html"}]},{"@type":"LearningResource","name":"Przenikanie wielościanów","description":"Przenikanie wielościanów (graniastosłupów i ostrosłupów): metoda krawędzi i płaszczyzn pomocniczych, kolejność łączenia punktów linii przenikania i widoczność – zadania typowe dla kolokwium.","inLanguage":"pl","isAccessibleForFree":true,"learningResourceType":"Lesson","isPartOf":{"@type":"Course","@id":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/#kurs","name":"Geometria wykreślna i grafika inżynierska – kurs krok po kroku"},"hasPart":[{"@type":"LearningResource","name":"2.1 Przenikanie wielościanów","url":"https://benozolorenozo.github.io/grafika-inzynierska-pwr/kurs/m2-wieloscany.html"}]}]}</script>
+</head>
+<body>
+<a class="skip" href="#tresc">Przejdź do treści</a>
+<header class="top">
+  <a class="brand" href="../index.html"><img src="../favicon.svg" alt="" width="28" height="28"> GrafInż PWr</a>
+  <nav aria-label="Nawigacja główna">
+    <a href="index.html">Kurs</a>
+    <a href="../index.html" class="cta">▶ Aplikacja 3D</a>
+  </nav>
+</header>
+<nav class="crumbs" aria-label="Okruszki"><ol><li><a href="../index.html">GrafInż PWr</a></li><li><a href="index.html">Kurs</a></li><li aria-current="page">Moduł 2. Przenikanie wielościanów</li></ol></nav>
+<main id="tresc">
+<h1>Moduł 2. Przenikanie wielościanów</h1>
+<p class="lead">Przenikanie wielościanów (graniastosłupów i ostrosłupów): metoda krawędzi i płaszczyzn pomocniczych, kolejność łączenia punktów linii przenikania i widoczność – zadania typowe dla kolokwium.</p>
+<h2>Lekcje</h2>
+<ul class="lessons"><li><a href="m2-wieloscany.html"><b>2.1</b> Przenikanie wielościanów</a> <span class="badge" title="Zadanie z listy ćwiczeniowej">📋 Lista 2</span><p>Przenikanie wielościanów – rozwiązanie krok po kroku (12 kroków, rysunek 2D i model 3D). Analiza: w obu rzutach sprawdzamy, które krawędzie jednej bryły…</p></li></ul>
+<h2>Teoria w pigułce</h2>
+<div class="cheat"><div class="cols"><div>
+<h3>Przenikanie wielościanów – metoda krawędzi</h3>
+<ol><li>Wybierz krawędzie, których rzuty (w <b>obu</b> rzutach) zachodzą na obrys drugiej bryły.</li>
+<li>Przez krawędź prowadź płaszczyznę <b>rzutującą</b> (dla krawędzi pionowej – czołową, dla krawędzi ⟂ π<sub>2</sub> – poziomą).</li>
+<li>Przekrój drugiej bryły tą płaszczyzną → wielokąt; jego punkty wspólne z krawędzią = punkty przenikania.</li>
+<li>Łącz dwa punkty odcinkiem ⇔ leżą na tej samej ścianie bryły I <b>i</b> tej samej ścianie bryły II.</li></ol>
+<h3>Rodzaje przenikania</h3>
+<ul><li><b>Częściowe</b> (wgłębienie): jedna zamknięta łamana.</li>
+<li><b>Całkowite</b> (przebicie): dwie zamknięte łamane.</li></ul>
+</div><div>
+<h3>Widoczność</h3>
+<ul><li>Odcinek przenikania jest widoczny ⇔ leży na ścianach widocznych <b>w obu</b> bryłach.</li>
+<li>Ściana jest widoczna w π<sub>1</sub>, gdy jest zwrócona w górę; w π<sub>2</sub>, gdy jest zwrócona do przodu; w π<sub>3</sub>, gdy jest zwrócona w lewo.</li>
+<li>Części krawędzi wewnątrz drugiej bryły nie rysujemy (nie istnieją w sumie brył).</li></ul>
+<h3>Graniastosłup na płaszczyźnie podwójnie rzutującej</h3>
+<p>Płaszczyzna ⟂ x<sub>12</sub> (profilowa): w π<sub>1</sub> i π<sub>2</sub> jest prostą ⟂ osi, a podstawa prawdziwa widoczna jest dopiero w <b>π<sub>3</sub></b> – dlatego w takim zadaniu kreślimy trzeci rzut.</p>
+<h3>Kontrola</h3>
+<p>Każdy punkt przenikania leży na krawędzi jednej bryły; liczba punktów na pętli jest parzysta po każdej stronie ściany.</p>
+</div></div></div>
+<h2>Typowe błędy na kolokwium</h2>
+<ul class="mist"><li>Łączenie punktów, które nie leżą na wspólnej ścianie obu brył.</li><li>Pominięcie krawędzi drugiej bryły – przebicia trzeba szukać dla krawędzi <b>obu</b> brył.</li><li>Rysowanie fragmentów krawędzi, które są wewnątrz drugiej bryły.</li><li>Widoczność odcinka przenikania sprawdzona tylko w jednej bryle.</li><li>Brak trzeciego rzutu, gdy podstawa leży na płaszczyźnie podwójnie rzutującej.</li></ul>
+<nav class="pn" aria-label="Moduły"><a rel="prev" href="modul-1.html">← Moduł 1. Rzuty Monge’a</a><a rel="next" href="modul-3.html">Moduł 3. Przenikanie brył obrotowych →</a></nav>
+</main>
+<footer class="foot">
+  <p><b>GrafInż PWr</b> – nieoficjalny, studencki portal do nauki geometrii wykreślnej i grafiki inżynierskiej. Nie jest oficjalnym materiałem Politechniki Wrocławskiej.</p>
+  <p><a href="index.html">Spis lekcji</a> · <a href="../index.html">Aplikacja interaktywna</a> · <a href="../informacje.html">Informacje i prywatność</a></p>
+</footer>
+</body>
+</html>
