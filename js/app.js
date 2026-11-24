@@ -1019,7 +1019,7 @@
   /* ---------- układ kolumn (przeciąganie) ---------- */
   const main = $('#main');
   let cols = store.get('cols', null);
-  let layout = store.get('layout', 3);
+  let layout = [1, 2, 3].indexOf(+store.get('layout', 3)) >= 0 ? +store.get('layout', 3) : 3;
   function applyCols() {
     const W = main.clientWidth || window.innerWidth;
     let c = cols || [360, (W - 360) / 2, (W - 360) / 2];
@@ -1028,7 +1028,8 @@
     let f3 = c[1] / (c[1] + c[2] || 1);
     if (layout === 1) f3 = 1;
     if (layout === 2) f3 = 0;
-    main.style.gridTemplateColumns = side + 'px 6px ' + (layout === 2 ? '0px' : f3 * 100 + 'fr') + ' 6px ' + (layout === 1 ? '0px' : (1 - f3) * 100 + 'fr');
+    main.style.gridTemplateColumns =
+      layout === 1 ? side + 'px 6px 1fr 0px 0px' : layout === 2 ? side + 'px 6px 0px 0px 1fr' : side + 'px 6px ' + f3 * 100 + 'fr 6px ' + (1 - f3) * 100 + 'fr';
     main.dataset.layout = layout;
     void rest;
   }
@@ -1070,10 +1071,18 @@
     });
   });
   function setLayout(n) {
+    if ([1, 2, 3].indexOf(n) < 0) n = 3;
     layout = n;
     store.set('layout', n);
     applyCols();
-    document.querySelectorAll('[data-lay]').forEach((b) => b.classList.toggle('on', +b.dataset.lay === n));
+    // odśwież rozmiary od razu (widok mógł być ukryty – wtedy miał zastępczy rozmiar)
+    v3.resize();
+    if (v2.box) v2.fit(v2.box);
+    else v2.render(false);
+    document.querySelectorAll('[data-lay]').forEach((b) => {
+      b.classList.toggle('on', +b.dataset.lay === n);
+      b.setAttribute('aria-pressed', String(+b.dataset.lay === n));
+    });
   }
   document.querySelectorAll('[data-lay]').forEach((b) => (b.onclick = () => setLayout(+b.dataset.lay)));
   window.addEventListener('resize', applyCols);

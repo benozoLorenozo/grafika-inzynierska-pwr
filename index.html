@@ -7,7 +7,7 @@
 <title>GrafInż PWr – portal edukacyjny grafiki inżynierskiej</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#1d4f9c">
-<link rel="stylesheet" href="css/style.css?v=20261124">
+<link rel="stylesheet" href="css/style.css?v=20261124b">
 </head>
 <body>
 <a class="skip" href="#stepBox">Przejdź do opisu kroku</a>
@@ -61,12 +61,13 @@
       <span id="camExtra"></span>
       <span id="unfoldBox"><label>Rozkładanie rzutni <input type="range" aria-label="Rozkładanie rzutni" id="unfold" min="0" max="1" step="0.01" value="0"></label><span id="unfoldTxt"></span></span>
       <span id="zsBox" title="Przewyższenie: skala pionowa modelu 3D (rysunek 2D bez zmian)">przewyższenie <input type="range" id="zs" min="1" max="15" step="0.5" value="1" aria-label="Przewyższenie modelu 3D"><span id="zsTxt"></span><button id="zsAuto">auto</button></span>
+      <span class="lay lay3" role="group" aria-label="Układ widoków"><button data-lay="1" title="tylko 3D (1)">3D</button><button data-lay="3" title="oba widoki (3)">3D|2D</button><button data-lay="2" title="tylko 2D (2)">2D</button></span>
     </div>
     <div id="v3" class="vbody" role="img" aria-label="Interaktywny model 3D konstrukcji: przeciągnij, aby obrócić, kółko – przybliżenie. Opis konstrukcji znajduje się w panelu kroku."></div>
   </section>
   <div class="gutter" title="Przeciągnij, aby zmienić szerokość (dwuklik – domyślnie)"></div>
   <section id="v2wrap" class="view" aria-label="Rysunek 2D">
-    <div class="vbar"><b id="v2title">Rysunek 2D</b><button id="bFit" title="D">Dopasuj</button><button id="bMeasure" title="Miarka: kliknij dwa punkty (M)">📏 Miarka</button><button id="bDims" title="Wymiary na rysunku (W)" aria-pressed="false">↔ Wymiary</button><button id="bEng" title="Rysunek techniczny: ramka, tabliczka, linie i pismo wg norm (E)" aria-pressed="false">📐 Rysunek techniczny</button><span class="lay"><button data-lay="1" title="tylko 3D (1)">3D</button><button data-lay="3" title="oba widoki (3)">3D|2D</button><button data-lay="2" title="tylko 2D (2)">2D</button></span><span class="hint">kółko – zoom, przeciągnij – przesuń</span></div>
+    <div class="vbar"><b id="v2title">Rysunek 2D</b><button id="bFit" title="D">Dopasuj</button><button id="bMeasure" title="Miarka: kliknij dwa punkty (M)">📏 Miarka</button><button id="bDims" title="Wymiary na rysunku (W)" aria-pressed="false">↔ Wymiary</button><button id="bEng" title="Rysunek techniczny: ramka, tabliczka, linie i pismo wg norm (E)" aria-pressed="false">📐 Rysunek techniczny</button><span class="lay lay2" role="group" aria-label="Układ widoków"><button data-lay="1" title="tylko 3D (1)">3D</button><button data-lay="3" title="oba widoki (3)">3D|2D</button><button data-lay="2" title="tylko 2D (2)">2D</button></span><span class="hint">kółko – zoom, przeciągnij – przesuń</span></div>
     <div id="v2" class="vbody" role="img" aria-label="Rysunek wykreślny 2D konstrukcji. Opis konstrukcji znajduje się w panelu kroku."></div>
   </section>
 </main>
@@ -75,20 +76,20 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="js/math.js?v=20261124"></script>
-<script src="js/core.js?v=20261124"></script>
-<script src="js/view3d.js?v=20261124"></script>
-<script src="js/view2d.js?v=20261124"></script>
-<script src="js/teoria.js?v=20261124"></script>
-<script src="js/tools.js?v=20261124"></script>
-<script src="js/lessons/m1.js?v=20261124"></script>
-<script src="js/lessons/m2.js?v=20261124"></script>
-<script src="js/lessons/m3.js?v=20261124"></script>
-<script src="js/lessons/m4.js?v=20261124"></script>
-<script src="js/lessons/m5.js?v=20261124"></script>
-<script src="js/lessons/m6.js?v=20261124"></script>
-<script src="js/generators.js?v=20261124"></script>
-<script src="js/quiz.js?v=20261124"></script>
-<script src="js/app.js?v=20261124"></script>
+<script src="js/math.js?v=20261124b"></script>
+<script src="js/core.js?v=20261124b"></script>
+<script src="js/view3d.js?v=20261124b"></script>
+<script src="js/view2d.js?v=20261124b"></script>
+<script src="js/teoria.js?v=20261124b"></script>
+<script src="js/tools.js?v=20261124b"></script>
+<script src="js/lessons/m1.js?v=20261124b"></script>
+<script src="js/lessons/m2.js?v=20261124b"></script>
+<script src="js/lessons/m3.js?v=20261124b"></script>
+<script src="js/lessons/m4.js?v=20261124b"></script>
+<script src="js/lessons/m5.js?v=20261124b"></script>
+<script src="js/lessons/m6.js?v=20261124b"></script>
+<script src="js/generators.js?v=20261124b"></script>
+<script src="js/quiz.js?v=20261124b"></script>
+<script src="js/app.js?v=20261124b"></script>
 </body>
 </html>
