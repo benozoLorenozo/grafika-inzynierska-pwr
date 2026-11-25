@@ -1105,27 +1105,66 @@
           b = planeContours(pfT, big, [k])[0];
         if (!a || !b) return;
         const r = G.line2(a.a, a.b, b.a, b.b);
-        if (r) ip.push({ k, p: r.p });
+        if (r) ip.push({ k, p: r.p, wq: cQ.find((c) => c.lv === k), wt: cT.find((c) => c.lv === k) });
       });
+      // do konstrukcji bierzemy dwie pary warstwic (narysowanych w obu wielobokach), których przecięcia leżą najbliżej rysunku
+      const ctr = G.centroid(Q.map(P2).concat(T.map(P2)));
+      const cand = ip.filter((q) => q.wq && q.wt);
+      const used = (cand.length >= 2 ? cand : ip)
+        .slice()
+        .sort((a, b) => V.dist(a.p, ctr) - V.dist(b.p, ctr))
+        .slice(0, 2)
+        .sort((a, b) => a.k - b.k);
+      // czy punkt prostej warstwicy leży na jej narysowanym (przyciętym do wieloboku) odcinku
+      const onSeg = (q, c) => {
+        if (!c) return false;
+        const d = V.sub(c.b, c.a);
+        const t = V.dot(V.sub(q, c.a), d) / V.dot(d, d);
+        return t >= -1e-6 && t <= 1 + 1e-6;
+      };
+      const inBox = (q) => q[0] >= box[0] && q[0] <= box[2] && q[1] >= box[1] && q[1] <= box[3];
+      const outside = used.filter((q) => !inBox(q.p) || !onSeg(q.p, q.wq) || !onSeg(q.p, q.wt));
       B.step({
         title: 'Prosta k = krawędź przecięcia płaszczyzn',
-        co: 'Punkty przecięcia warstwic o równych cechach: ' + ip.map((q) => q.k).join(', ') + ' → prosta <b>k</b>.',
-        jak: 'Gdy warstwice o danej cesze nie przecinają się w obrębie rysunku, przedłużamy je.',
-        why: 'Punkt przecięcia warstwic o cesze n leży na wysokości n w obu płaszczyznach – należy do ich krawędzi.',
+        co:
+          used.length === 2
+            ? 'Bierzemy warstwice o cechach <b>' + used[0].k + '</b> i <b>' + used[1].k + '</b> obu płaszczyzn. Punkty przecięcia warstwic o równych cechach (' + used.map((q) => q.k + '–' + q.k).join(', ') + ') łączymy → prosta <b>k</b>.'
+            : 'Za mało przecięć warstwic o równych cechach.',
+        jak:
+          (outside.length ? 'Warstwice o ' + (outside.length === 2 ? 'obu cechach' : 'cesze ' + outside[0].k) + ' przecinają się poza wielobokami – <b>przedłużamy je</b> (kreskowo) aż do punktu przecięcia. ' : '') +
+          'Wybieramy pary, które przecinają się najbliżej rysunku; pozostałe przecięcia leżą na tej samej prostej (kontrola).',
+        why: 'Punkt przecięcia warstwic o cesze n leży na wysokości n w obu płaszczyznach – należy do ich krawędzi. Krawędź jest prostą, wystarczą dwa punkty. Płaszczyzny nie kończą się na brzegach wieloboków, dlatego warstwice wolno przedłużać.',
       });
-      let k0 = null,
-        kd = null;
-      if (ip.length >= 2) {
-        k0 = ip[0].p;
-        kd = V.norm(V.sub(ip[ip.length - 1].p, ip[0].p));
-        const c = G.clipLine2(k0, kd, box);
-        if (c) B.a2({ t: 'seg', id: 'k', a: c[0], b: c[1], s: 'aux', label: "k'" });
-        ip.forEach((q) => {
-          if (q.p[0] < box[0] || q.p[0] > box[2] || q.p[1] < box[1] || q.p[1] > box[3]) return;
-          B.a2({ t: 'pt', id: 'k' + q.k, p: q.p, s: 'aux', r: 2.2 });
-          B.info('k' + q.k, 'Punkt prostej k o cesze ' + q.k, ['wq' + q.k, 'wt' + q.k]);
+      if (used.length === 2) {
+        const [u1, u2] = used;
+        const kd = V.norm(V.sub(u2.p, u1.p));
+        // zakres k: oba punkty i oba wieloboki, z zapasem
+        const ts = [u1.p, u2.p].concat(Q.map(P2), T.map(P2)).map((q) => V.dot(V.sub(q, u1.p), kd));
+        const t0 = Math.min(...ts) - 3,
+          t1 = Math.max(...ts) + 3;
+        const ka = V.add(u1.p, V.mul(kd, t0)),
+          kb = V.add(u1.p, V.mul(kd, t1));
+        const z3 = (q) => [q[0], q[1], pfQ.f(q[0], q[1])];
+        B.a2({ t: 'seg', id: 'k', a: ka, b: kb, s: 'res2', label: "k'", labelAt: 0.97 });
+        B.a3({ t: 'seg', id: 'k', a: z3(ka), b: z3(kb), s: 'res2', label: 'k' });
+        B.info('k', 'Prosta k – krawędź przecięcia płaszczyzn obu wieloboków (przez punkty ' + u1.k + ' i ' + u2.k + ')');
+        used.forEach((q) => {
+          const id = 'k' + q.k;
+          // przedłużenia warstwic od bliższego końca do punktu przecięcia
+          [
+            [q.wq, 'wq', 'cont'],
+            [q.wt, 'wt', 'aux'],
+          ].forEach(([c, pre, st]) => {
+            if (!c || onSeg(q.p, c)) return;
+            const e = V.dist(c.a, q.p) < V.dist(c.b, q.p) ? c.a : c.b;
+            B.a2({ t: 'seg', id: pre + q.k, a: e, b: q.p, s: st, w: 0.9, dash: true });
+            B.a3({ t: 'seg', id: pre + q.k, a: [e[0], e[1], q.k], b: [q.p[0], q.p[1], q.k], s: st, dash: true });
+          });
+          B.a2({ t: 'pt', id, p: q.p, s: 'res2', r: 2.6, label: String(q.k), labCls: 'small' });
+          B.a3({ t: 'pt', id, p: [q.p[0], q.p[1], q.k], s: 'res2', small: true, label: String(q.k) });
+          B.info(id, 'Punkt prostej k o cesze ' + q.k + ': przecięcie warstwic ' + q.k + ' obu płaszczyzn', ['wq' + q.k, 'wt' + q.k]);
+          B.src('wq' + q.k, 'wt' + q.k);
         });
-        B.info('k', 'Prosta k – krawędź przecięcia płaszczyzn obu wieloboków');
       }
       // MN
       const S1 = new G.Polyhedron([Q]),

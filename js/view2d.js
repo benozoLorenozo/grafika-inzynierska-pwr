@@ -153,12 +153,13 @@
         const idA = p.id ? ' data-id="' + p.id + '"' : '';
         const style = (p.col ? 'stroke:' + p.col + ';' : '') + (p.w ? 'stroke-width:' + p.w + 'px;' : '');
         if (p.t === 'seg') {
+          if (p.dash) cls.push('dash');
           const a = this.S(p.a),
             b = this.S(p.b);
           const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
           let st = style;
           if (isNew) {
-            cls.push(p.s === 'hid' || p.s === 'odn' || p.s === 'hidv' ? 'newfade' : 'newdraw');
+            cls.push(p.s === 'hid' || p.s === 'odn' || p.s === 'hidv' || p.dash ? 'newfade' : 'newdraw');
             if (cls.indexOf('newdraw') >= 0) st += 'stroke-dasharray:' + L.toFixed(1) + ';stroke-dashoffset:' + L.toFixed(1) + ';--L:' + L.toFixed(1) + ';';
           }
           out.push('<line class="' + cls.join(' ') + '"' + idA + ' x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '" style="' + st + '"/>');

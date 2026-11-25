@@ -141,6 +141,7 @@ circle.hit { fill: transparent; stroke: none !important; pointer-events: all; }
 .s-res2 { stroke: var(--res2); stroke-width: calc(2.2px * var(--lw)); }
 .s-dist { stroke: var(--dist); stroke-width: calc(2.6px * var(--lw)); opacity: .85; }
 .s-cont { stroke: var(--cont); stroke-width: calc(.9px * var(--lw)); }
+line.dash { stroke-dasharray: 5 3; }
 .s-contb { stroke: var(--contb); stroke-width: calc(1.6px * var(--lw)); }
 .s-sec { stroke: var(--sec); stroke-width: calc(1.8px * var(--lw)); }
 .s-light { stroke: var(--light); stroke-width: calc(1px * var(--lw)); stroke-dasharray: 4 3; }
