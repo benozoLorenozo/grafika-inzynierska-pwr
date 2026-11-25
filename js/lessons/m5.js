@@ -618,9 +618,10 @@
      5.3 Przebicie płaszczyzny (A,B,C) prostą + widoczność (Lista 5, zad. 2)
      ================================================================= */
   const L5Z2 = {
-    A: [3.0, 16.4, 3],
-    B: [14.1, 10.3, -1],
-    C: [15.4, 18.1, 2],
+    // A, B, C leżą na bokach wieloboku (współrzędne dosunięte do boków po digitalizacji)
+    A: [3.09, 16.35, 3],
+    B: [14.09, 10.25, -1],
+    C: [15.4, 18.08, 2],
     poly: [
       [0.5, 12.0],
       [18.17, 9.73],

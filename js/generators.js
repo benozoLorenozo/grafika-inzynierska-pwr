@@ -452,7 +452,8 @@
         const poly = [A, Bq, C, Dq].map((q) => [q[0], q[1]]);
         const hull = G.hull2(poly);
         if (hull.length < 4) continue;
-        const ex = hull.map((q) => V.add([cen[0], cen[1]], V.mul(V.sub(q, [cen[0], cen[1]]), 1.18)));
+        // wielobok = równoległobok ABCD: punkty wyznaczające płaszczyznę są jego wierzchołkami
+        const ex = hull;
         if (ex.some((q) => q[0] < 0 || q[0] > 26 || q[1] < 0 || q[1] > 26)) continue;
         const w = [R.u(0.2, 0.8), R.u(0.2, 0.8)];
         const P = [cen[0] + (ex[0][0] - cen[0]) * (w[0] - 0.5) * 0.8, cen[1] + (ex[1][1] - cen[1]) * (w[1] - 0.5) * 0.8];
